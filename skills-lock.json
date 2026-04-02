@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "bun": {
+      "source": "bun.sh",
+      "sourceType": "well-known",
+      "computedHash": "bc316dd20398ba1d43069d1ebc4e429f1ba2766d51c69aa96ef815c52346cdb7"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+    },
+    "rspress-custom-theme": {
+      "source": "rstackjs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "7fe2fa67caabd3336adc635fbe97716d14ff22780d0046237d3b5086e8565277"
+    },
+    "rspress-description-generator": {
+      "source": "rstackjs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "ca2693ca055d1b4e5903bdfacab522f46ca0e13cbc5db59e6c9589fdc8efc6ad"
+    }
+  }
+}

@@ -17,10 +17,15 @@
     "test": "bun test"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
   },
   "peerDependencies": {
     "@rspress/core": "^2.0.7",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "react-force-graph-2d": "^1.29.1"
   }
 }

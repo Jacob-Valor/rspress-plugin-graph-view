@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "@rspress/core/runtime";
-import GraphView from "./GraphView";
+import GraphView, { type GraphViewHandle } from "./GraphView";
 
 interface GraphPanelProps {
   defaultOpen?: boolean;
@@ -34,12 +34,63 @@ function injectKeyframes() {
   document.head.appendChild(style);
 }
 
+interface ZoomButtonProps {
+  children: React.ReactNode;
+  ariaLabel: string;
+  onClick: () => void;
+}
+
+function ZoomButton({ children, ariaLabel, onClick }: ZoomButtonProps) {
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      onClick={onClick}
+      style={{
+        width: 28,
+        height: 28,
+        borderRadius: 6,
+        border:
+          "1px solid color-mix(in srgb, var(--rp-c-divider, #cbd5e1) 50%, transparent)",
+        background:
+          "color-mix(in srgb, var(--rp-c-bg, #ffffff) 85%, transparent)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        color: "var(--rp-c-text, #475569)",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 0,
+        transition: "background 0.15s, color 0.15s, border-color 0.15s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background =
+          "color-mix(in srgb, var(--rp-c-brand, #6366f1) 10%, transparent)";
+        e.currentTarget.style.color = "var(--rp-c-brand, #6366f1)";
+        e.currentTarget.style.borderColor =
+          "color-mix(in srgb, var(--rp-c-brand, #6366f1) 30%, transparent)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background =
+          "color-mix(in srgb, var(--rp-c-bg, #ffffff) 85%, transparent)";
+        e.currentTarget.style.color = "var(--rp-c-text, #475569)";
+        e.currentTarget.style.borderColor =
+          "color-mix(in srgb, var(--rp-c-divider, #cbd5e1) 50%, transparent)";
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [panelSize, setPanelSize] = useState({ width: 320, height: 240 });
   const [panelVisible, setPanelVisible] = useState(defaultOpen);
   const panelRef = useRef<HTMLDivElement>(null);
+  const graphViewRef = useRef<GraphViewHandle>(null);
 
   useEffect(() => {
     injectKeyframes();
@@ -90,7 +141,8 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
           height: 48,
           borderRadius: "50%",
           border: "none",
-          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%)",
+          background:
+            "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%)",
           color: "#fff",
           cursor: "pointer",
           display: "flex",
@@ -154,10 +206,12 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
             height: panelSize.height,
             borderRadius: 14,
             overflow: "hidden",
-            background: "color-mix(in srgb, var(--rp-c-bg, #ffffff) 78%, transparent)",
+            background:
+              "color-mix(in srgb, var(--rp-c-bg, #ffffff) 78%, transparent)",
             backdropFilter: "blur(16px) saturate(1.4)",
             WebkitBackdropFilter: "blur(16px) saturate(1.4)",
-            border: "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 60%, transparent)",
+            border:
+              "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 60%, transparent)",
             boxShadow: [
               "0 8px 32px rgba(0,0,0,0.12)",
               "0 2px 8px rgba(0,0,0,0.06)",
@@ -167,7 +221,9 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
               ? "gv-panel-enter 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
               : "none",
             opacity: isOpen ? 1 : 0,
-            transform: isOpen ? "scale(1) translateY(0)" : "scale(0.92) translateY(8px)",
+            transform: isOpen
+              ? "scale(1) translateY(0)"
+              : "scale(0.92) translateY(8px)",
             transition: isOpen
               ? "none"
               : "opacity 0.2s ease, transform 0.2s ease",
@@ -197,8 +253,10 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
               justifyContent: "space-between",
               height: headerHeight,
               padding: "0 12px",
-              borderBottom: "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 40%, transparent)",
-              background: "color-mix(in srgb, var(--rp-c-bg, #ffffff) 50%, transparent)",
+              borderBottom:
+                "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 40%, transparent)",
+              background:
+                "color-mix(in srgb, var(--rp-c-bg, #ffffff) 50%, transparent)",
               position: "relative",
               zIndex: 1,
             }}
@@ -227,7 +285,8 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
                 borderRadius: 6,
                 border: "none",
                 background: "transparent",
-                color: "color-mix(in srgb, var(--rp-c-brand, #6366f1) 60%, gray)",
+                color:
+                  "color-mix(in srgb, var(--rp-c-brand, #6366f1) 60%, gray)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -263,12 +322,100 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
           </div>
 
           {/* Graph area */}
-          <div style={{ position: "relative", width: "100%", height: graphHeight }}>
+          <div
+            style={{ position: "relative", width: "100%", height: graphHeight }}
+          >
             <GraphView
+              ref={graphViewRef}
               width={panelSize.width}
               height={graphHeight}
               onNodeClick={handleNodeClick}
             />
+
+            {/* Zoom controls */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: 8,
+                right: 8,
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                zIndex: 10,
+              }}
+            >
+              <ZoomButton
+                ariaLabel="Zoom in"
+                onClick={() => graphViewRef.current?.zoomIn()}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </ZoomButton>
+              <ZoomButton
+                ariaLabel="Zoom out"
+                onClick={() => graphViewRef.current?.zoomOut()}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </ZoomButton>
+              <ZoomButton
+                ariaLabel="Fit to view"
+                onClick={() => graphViewRef.current?.zoomToFit()}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15 3h6v6" />
+                  <path d="M9 21H3v-6" />
+                  <path d="M21 3l-7 7" />
+                  <path d="M3 21l7-7" />
+                </svg>
+              </ZoomButton>
+              <ZoomButton
+                ariaLabel="Reset zoom"
+                onClick={() => graphViewRef.current?.zoomReset()}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+              </ZoomButton>
+            </div>
           </div>
         </div>
       )}

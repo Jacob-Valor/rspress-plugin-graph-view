@@ -1,4 +1,13 @@
-import { useMemo, useCallback, useEffect, useState, useRef, type ElementType } from "react";
+import {
+  useMemo,
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  type ElementType,
+} from "react";
 import { useLocation } from "@rspress/core/runtime";
 import { graphData } from "virtual-graph-data";
 import {
@@ -32,7 +41,17 @@ const COLORS = {
 const FONT_STACK =
   "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-export default function GraphView({ width, height, onNodeClick }: GraphViewProps) {
+export interface GraphViewHandle {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  zoomReset: () => void;
+  zoomToFit: () => void;
+}
+
+export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
+  { width, height, onNodeClick },
+  ref,
+) {
   const { pathname } = useLocation();
   const [ForceGraph, setForceGraph] = useState<ElementType | null>(null);
   const hoveredNodeRef = useRef<string | null>(null);
@@ -40,12 +59,47 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
   const frameRef = useRef(0);
   const forceRef = useRef<{ d3ReheatSimulation?: () => void } | null>(null);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      zoomIn: () => {
+        const fg = forceRef.current as any;
+        if (fg?.zoom) {
+          const current = fg.zoom();
+          fg.zoom(current * 1.3, 300);
+        }
+      },
+      zoomOut: () => {
+        const fg = forceRef.current as any;
+        if (fg?.zoom) {
+          const current = fg.zoom();
+          fg.zoom(current / 1.3, 300);
+        }
+      },
+      zoomReset: () => {
+        const fg = forceRef.current as any;
+        if (fg?.zoom) {
+          fg.zoom(1, 300);
+        }
+      },
+      zoomToFit: () => {
+        const fg = forceRef.current as any;
+        if (fg?.zoomToFit) {
+          fg.zoomToFit(300, 16);
+        }
+      },
+    }),
+    [],
+  );
+
   useEffect(() => {
     let active = true;
     import("react-force-graph-2d").then((mod) => {
       if (active) setForceGraph(() => mod.default);
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -63,7 +117,11 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
   }, [pathname]);
 
   const graphIndex = useMemo(() => createGraphIndex(graphData), []);
-  const { nodes: fgNodes, links: fgLinks, isLargeGraph } = useMemo(
+  const {
+    nodes: fgNodes,
+    links: fgLinks,
+    isLargeGraph,
+  } = useMemo(
     () => deriveGraphViewData(graphData, graphIndex, currentRoutePath),
     [graphIndex, currentRoutePath],
   );
@@ -72,8 +130,14 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
     (nodeId: string): Set<string> => {
       const connected = new Set<string>();
       for (const link of fgLinks) {
-        const src = typeof link.source === "object" ? (link.source as ForceGraphNode).id : link.source;
-        const tgt = typeof link.target === "object" ? (link.target as ForceGraphNode).id : link.target;
+        const src =
+          typeof link.source === "object"
+            ? (link.source as ForceGraphNode).id
+            : link.source;
+        const tgt =
+          typeof link.target === "object"
+            ? (link.target as ForceGraphNode).id
+            : link.target;
         if (src === nodeId) connected.add(tgt as string);
         if (tgt === nodeId) connected.add(src as string);
       }
@@ -116,7 +180,8 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
 
       ctx.fillStyle = COLORS.gridDot;
       const startX = Math.floor(-width / (2 * globalScale) / spacing) * spacing;
-      const startY = Math.floor(-height / (2 * globalScale) / spacing) * spacing;
+      const startY =
+        Math.floor(-height / (2 * globalScale) / spacing) * spacing;
       const endX = -startX + spacing;
       const endY = -startY + spacing;
 
@@ -156,7 +221,14 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
         const pulseRadius = radius + 6 + Math.sin(pulsePhase * Math.PI * 2) * 3;
         const pulseAlpha = 0.15 + Math.sin(pulsePhase * Math.PI * 2) * 0.08;
 
-        const outerGlow = ctx.createRadialGradient(nx, ny, radius, nx, ny, radius + 14);
+        const outerGlow = ctx.createRadialGradient(
+          nx,
+          ny,
+          radius,
+          nx,
+          ny,
+          radius + 14,
+        );
         outerGlow.addColorStop(0, `rgba(99, 102, 241, 0.18)`);
         outerGlow.addColorStop(1, "rgba(99, 102, 241, 0)");
         ctx.beginPath();
@@ -217,7 +289,8 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
         ctx.stroke();
       }
 
-      const shouldDrawLabel = !isLargeGraph || node.isCurrent || isHovered || globalScale >= 1.4;
+      const shouldDrawLabel =
+        !isLargeGraph || node.isCurrent || isHovered || globalScale >= 1.4;
       if (shouldDrawLabel && label) {
         const fontW = node.isCurrent || isHovered ? 600 : 400;
         ctx.font = `${fontW} ${fontSize}px ${FONT_STACK}`;
@@ -225,7 +298,7 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
         ctx.textBaseline = "middle";
 
         ctx.fillStyle = "rgba(0,0,0,0.12)";
-        ctx.fillText(label, nx + 0.3, (ny + radius + fontSize) + 0.3);
+        ctx.fillText(label, nx + 0.3, ny + radius + fontSize + 0.3);
 
         if (node.isCurrent) {
           ctx.fillStyle = COLORS.currentLabel;
@@ -245,9 +318,16 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
   const linkColor = useCallback(
     (link: { source?: unknown; target?: unknown }) => {
       if (!hoveredNodeRef.current) return COLORS.link;
-      const src = typeof link.source === "object" ? (link.source as ForceGraphNode).id : link.source;
-      const tgt = typeof link.target === "object" ? (link.target as ForceGraphNode).id : link.target;
-      const isConnected = src === hoveredNodeRef.current || tgt === hoveredNodeRef.current;
+      const src =
+        typeof link.source === "object"
+          ? (link.source as ForceGraphNode).id
+          : link.source;
+      const tgt =
+        typeof link.target === "object"
+          ? (link.target as ForceGraphNode).id
+          : link.target;
+      const isConnected =
+        src === hoveredNodeRef.current || tgt === hoveredNodeRef.current;
       return isConnected ? COLORS.linkHighlight : "rgba(100, 116, 139, 0.1)";
     },
     [],
@@ -256,10 +336,17 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
   const linkWidth = useCallback(
     (link: { source?: unknown; target?: unknown }) => {
       if (!hoveredNodeRef.current) return isLargeGraph ? 0.75 : 1;
-      const src = typeof link.source === "object" ? (link.source as ForceGraphNode).id : link.source;
-      const tgt = typeof link.target === "object" ? (link.target as ForceGraphNode).id : link.target;
-      const isConnected = src === hoveredNodeRef.current || tgt === hoveredNodeRef.current;
-      return isConnected ? 1.8 : (isLargeGraph ? 0.5 : 0.6);
+      const src =
+        typeof link.source === "object"
+          ? (link.source as ForceGraphNode).id
+          : link.source;
+      const tgt =
+        typeof link.target === "object"
+          ? (link.target as ForceGraphNode).id
+          : link.target;
+      const isConnected =
+        src === hoveredNodeRef.current || tgt === hoveredNodeRef.current;
+      return isConnected ? 1.8 : isLargeGraph ? 0.5 : 0.6;
     },
     [isLargeGraph],
   );
@@ -305,11 +392,13 @@ export default function GraphView({ width, height, onNodeClick }: GraphViewProps
       linkDirectionalParticles={isLargeGraph ? 0 : 2}
       linkDirectionalParticleWidth={isLargeGraph ? 0 : 2}
       linkDirectionalParticleColor={() => COLORS.particleColor}
-      onNodeClick={handleNodeClick as (node: unknown, event: MouseEvent) => void}
+      onNodeClick={
+        handleNodeClick as (node: unknown, event: MouseEvent) => void
+      }
       onRenderFramePre={drawBackground}
       backgroundColor="transparent"
       d3AlphaDecay={isLargeGraph ? 0.06 : 0.02}
       d3VelocityDecay={isLargeGraph ? 0.4 : 0.3}
     />
   );
-}
+});

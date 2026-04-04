@@ -13,6 +13,7 @@ export default defineConfig({
   plugins: [
     graphView({
       defaultOpen: false,
+      profileBuild: false,
     }),
   ],
 });
@@ -23,6 +24,9 @@ export default defineConfig({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `defaultOpen` | `boolean` | `false` | Open graph panel by default |
+| `profileBuild` | `boolean` | `false` | Log graph build timings, cache hits, and module reuse during route scanning |
+
+You can also enable build profiling ad hoc with `RSPRESS_GRAPH_VIEW_PROFILE=1`.
 
 See also:
 - [Getting Started](./getting-started.md)

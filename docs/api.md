@@ -15,8 +15,11 @@ Creates an Rspress plugin instance.
 ```ts
 interface RspressPluginGraphViewOptions {
   defaultOpen?: boolean;
+  profileBuild?: boolean;
 }
 ```
+
+`profileBuild` can also be enabled temporarily with the `RSPRESS_GRAPH_VIEW_PROFILE=1` environment variable.
 
 ## Related
 

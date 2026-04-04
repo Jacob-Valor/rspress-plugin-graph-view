@@ -10,6 +10,7 @@
     "graph-view"
   ],
   "scripts": {
+    "bench:graph": "bun scripts/bench-graph-build.ts",
     "build": "tsc --declarationMap false",
     "dev": "tsc -w",
     "docs:build": "rspress build",

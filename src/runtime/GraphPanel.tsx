@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "@rspress/core/runtime";
 import GraphView from "./GraphView";
 
 interface GraphPanelProps {
@@ -6,6 +7,7 @@ interface GraphPanelProps {
 }
 
 export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [panelSize, setPanelSize] = useState({ width: 320, height: 240 });
 
@@ -21,8 +23,8 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
   }, []);
 
   const handleNodeClick = useCallback((routePath: string) => {
-    window.location.href = routePath;
-  }, []);
+    navigate(routePath);
+  }, [navigate]);
 
   return (
     <>

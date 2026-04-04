@@ -20,6 +20,11 @@
       "source": "rstackjs/agent-skills",
       "sourceType": "github",
       "computedHash": "ca2693ca055d1b4e5903bdfacab522f46ca0e13cbc5db59e6c9589fdc8efc6ad"
+    },
+    "zig-system-calls": {
+      "source": "oven-sh/bun",
+      "sourceType": "github",
+      "computedHash": "f2cbbde3d8f2acbbaab5e66f248599b84eb5ff8dd5c523de364bb9304dd07c61"
     }
   }
 }

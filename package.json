@@ -1,13 +1,29 @@
 {
   "name": "rspress-plugin-graph-view",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "type": "module",
   "description": "Interactive graph visualization for Rspress documentation sites — visualize your knowledge base connections like Obsidian",
-  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "rspress",
+    "plugin",
+    "graphview"
+  ],
+  "homepage": "https://github.com/Jacob-Valor/rspress-plugin-graph-view",
+  "bugs": {
+    "url": "https://github.com/Jacob-Valor/rspress-plugin-graph-view/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rstackjs/rspress-plugin-graph-view"
+    "url": "https://github.com/Jacob-Valor/rspress-plugin-graph-view.git"
   },
-  "type": "module",
+  "license": "MIT",
+  "author": "Jacob-Valor <jacob-programmer@tuta.io> (https://github.com/Jacob-Valor)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./src/index.ts",
@@ -18,13 +34,6 @@
       "default": "./src/runtime/*"
     }
   },
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
-  "files": [
-    "src",
-    "theme"
-  ],
   "scripts": {
     "bench:graph": "bun scripts/bench-graph-build.ts",
     "build": "tsc --declarationMap false",
@@ -37,18 +46,22 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "semantic-release": "^25.0.3",
+    "typescript": "^6.0.2"
   },
   "peerDependencies": {
     "@rspress/core": "^2.0.7",
-    "react": ">=18",
-    "react-dom": ">=18",
-    "react-force-graph-2d": "^1.29.1",
-    "typescript": "^5.9.3"
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-force-graph-2d": "^1.29.1"
   },
   "peerDependenciesMeta": {
     "typescript": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "rspress-plugin-devkit": "^1.0.0"
   }
 }

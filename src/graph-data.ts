@@ -1,6 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import * as path from "node:path";
+import { MDASTFromMarkdown, unistVisit } from "rspress-plugin-devkit";
 import type { GraphData, GraphLink, GraphNode } from "./types";
 
 export interface CollectedRoute {
@@ -339,20 +340,15 @@ function isInternalDocLink(link: string): boolean {
 }
 
 function extractMarkdownLinks(source: string): string[] {
+  const tree = MDASTFromMarkdown(source);
   const links: string[] = [];
-  const pattern = /\[[^\]]*\]\(([^)]+)\)/g;
 
-  for (const match of source.matchAll(pattern)) {
-    const index = match.index ?? 0;
-    if (index > 0 && source[index - 1] === "!") {
-      continue;
-    }
-
-    const target = cleanLinkTarget(match[1] ?? "");
+  unistVisit(tree, "link", (node) => {
+    const target = cleanLinkTarget(node.url);
     if (isInternalDocLink(target)) {
       links.push(target);
     }
-  }
+  });
 
   return links;
 }

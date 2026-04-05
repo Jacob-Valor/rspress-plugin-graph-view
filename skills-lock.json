@@ -21,6 +21,11 @@
       "sourceType": "github",
       "computedHash": "ca2693ca055d1b4e5903bdfacab522f46ca0e13cbc5db59e6c9589fdc8efc6ad"
     },
+    "semantic-release": {
+      "source": "terrylica/cc-skills",
+      "sourceType": "github",
+      "computedHash": "278d64fc2c1405e40f12fc4b32d126e6cb5d36dede9ff3fcedd32a920072bf6b"
+    },
     "zig-system-calls": {
       "source": "oven-sh/bun",
       "sourceType": "github",

@@ -5,7 +5,7 @@
 ### `default` — Plugin Factory
 
 ```ts
-import graphView from '@rspress/plugin-graph-view';
+import graphView from 'rspress-plugin-graph-view';
 ```
 
 Creates an Rspress plugin instance.

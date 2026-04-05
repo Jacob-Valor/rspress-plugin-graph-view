@@ -17,6 +17,13 @@ import {
   deriveGraphViewData,
   type ForceGraphNode,
 } from "./deriveGraphViewData";
+import {
+  LIGHT_COLORS,
+  DARK_COLORS,
+  mergeColors,
+  FONT_STACK,
+  type CanvasColors,
+} from "./canvas/colors";
 
 export interface GraphViewColors {
   currentNode?: string;
@@ -40,55 +47,6 @@ interface GraphViewProps {
   onNodeClick?: (routePath: string) => void;
   colors?: GraphViewColors;
 }
-
-const LIGHT_COLORS = {
-  currentNode: "#6366f1",
-  currentNodeGlow: "rgba(99, 102, 241, 0.25)",
-  currentNodeRing: "rgba(129, 140, 248, 0.5)",
-  currentLabel: "#6366f1",
-  node: "#94a3b8",
-  nodeHover: "#818cf8",
-  nodeShadow: "rgba(15, 23, 42, 0.18)",
-  label: "#64748b",
-  labelHover: "#475569",
-  link: "rgba(100, 116, 139, 0.35)",
-  linkHighlight: "rgba(99, 102, 241, 0.55)",
-  particleColor: "#818cf8",
-  gridDot: "rgba(148, 163, 184, 0.12)",
-  labelShadow: "rgba(0,0,0,0.12)",
-  hoverRing: "rgba(129, 140, 248, 0.45)",
-  nodeGradLight: "#b0bec5",
-  nodeGradHoverLight: "#a5b4fc",
-  fallbackLinkDim: "rgba(100, 116, 139, 0.1)",
-  loaderBorder: "rgba(99, 102, 241, 0.2)",
-  loaderTop: "#6366f1",
-};
-
-const DARK_COLORS = {
-  currentNode: "#818cf8",
-  currentNodeGlow: "rgba(129, 140, 248, 0.35)",
-  currentNodeRing: "rgba(165, 180, 252, 0.5)",
-  currentLabel: "#a5b4fc",
-  node: "#64748b",
-  nodeHover: "#818cf8",
-  nodeShadow: "rgba(0, 0, 0, 0.3)",
-  label: "#94a3b8",
-  labelHover: "#cbd5e1",
-  link: "rgba(148, 163, 184, 0.25)",
-  linkHighlight: "rgba(129, 140, 248, 0.6)",
-  particleColor: "#a5b4fc",
-  gridDot: "rgba(148, 163, 184, 0.08)",
-  labelShadow: "rgba(0,0,0,0.4)",
-  hoverRing: "rgba(165, 180, 252, 0.5)",
-  nodeGradLight: "#78909c",
-  nodeGradHoverLight: "#93a5f8",
-  fallbackLinkDim: "rgba(100, 116, 139, 0.08)",
-  loaderBorder: "rgba(129, 140, 248, 0.2)",
-  loaderTop: "#818cf8",
-};
-
-const FONT_STACK =
-  "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 function isDarkMode(): boolean {
   if (typeof document === "undefined") return false;
@@ -115,14 +73,6 @@ function useTheme(): boolean {
   }, []);
 
   return dark;
-}
-
-function mergeColors(
-  base: typeof LIGHT_COLORS,
-  overrides?: GraphViewColors,
-): typeof LIGHT_COLORS {
-  if (!overrides) return base;
-  return { ...base, ...overrides };
 }
 
 // ─── Error Boundary ────────────────────────────────────────────────
@@ -155,8 +105,7 @@ function GraphFallback({ width, height }: { width: number; height: number }) {
         flexDirection: "column",
         gap: 8,
         color: "#94a3b8",
-        fontFamily:
-          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontFamily: FONT_STACK,
         fontSize: 13,
       }}
     >

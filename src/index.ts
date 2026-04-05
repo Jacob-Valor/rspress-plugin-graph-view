@@ -4,7 +4,7 @@ import {
   buildGraphModule,
   createGraphBuildCache,
   type CollectedRoute,
-} from "./graph-data";
+} from "./build";
 import type { GraphViewColors } from "./runtime/GraphView";
 
 export interface RspressPluginGraphViewOptions {

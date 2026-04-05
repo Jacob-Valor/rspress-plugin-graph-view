@@ -6,7 +6,7 @@ import {
   buildGraphModule,
   createGraphBuildCache,
   type CollectedRoute,
-} from "./graph-data";
+} from "./build";
 
 const tempDirectories: string[] = [];
 

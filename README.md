@@ -7,7 +7,7 @@ Interactive graph visualization for [Rspress](https://rspress.dev/) documentatio
 
 ## Features
 
-- **Automatic link detection** — parses markdown links from your `.md`/`.mdx` files
+- **Automatic link detection** — uses MDAST parsing to extract all markdown link formats (inline, reference, autolinks) while ignoring links inside code blocks
 - **Click to navigate** — click any node to jump to that page
 - **Dark mode** — seamlessly adapts to light and dark themes
 - **Build caching** — incremental rebuilds with mtime-based cache invalidation
@@ -61,13 +61,13 @@ This plugin requires the following peer dependencies, which should already be in
 | Package | Version |
 | --- | --- |
 | `@rspress/core` | `^2.0.7` |
-| `react` | `>=18` |
-| `react-dom` | `>=18` |
+| `react` | `>=19` |
+| `react-dom` | `>=19` |
 | `react-force-graph-2d` | `^1.29.1` |
 
 ## How It Works
 
-1. **Build time**: The plugin collects all route metadata, reads each markdown file, extracts internal `[link](./path.md)` references, and builds a graph data structure.
+1. **Build time**: The plugin collects all route metadata, reads each markdown file, parses the content into an MDAST syntax tree, extracts internal link references, and builds a graph data structure.
 2. **Runtime**: A virtual module (`virtual-graph-data`) injects the graph data into the client. `react-force-graph-2d` renders an interactive force-directed graph with custom canvas drawing.
 3. **Caching**: File mtime + size signatures enable incremental rebuilds — unchanged files skip parsing entirely.
 

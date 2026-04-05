@@ -6,7 +6,9 @@ import {
   useRef,
   forwardRef,
   useImperativeHandle,
+  Component,
   type ElementType,
+  type ReactNode,
 } from "react";
 import { useLocation } from "@rspress/core/runtime";
 import { graphData } from "virtual-graph-data";
@@ -16,13 +18,30 @@ import {
   type ForceGraphNode,
 } from "./deriveGraphViewData";
 
+export interface GraphViewColors {
+  currentNode?: string;
+  currentNodeGlow?: string;
+  currentNodeRing?: string;
+  currentLabel?: string;
+  node?: string;
+  nodeHover?: string;
+  nodeShadow?: string;
+  label?: string;
+  labelHover?: string;
+  link?: string;
+  linkHighlight?: string;
+  particleColor?: string;
+  gridDot?: string;
+}
+
 interface GraphViewProps {
   width: number;
   height: number;
   onNodeClick?: (routePath: string) => void;
+  colors?: GraphViewColors;
 }
 
-const COLORS = {
+const LIGHT_COLORS = {
   currentNode: "#6366f1",
   currentNodeGlow: "rgba(99, 102, 241, 0.25)",
   currentNodeRing: "rgba(129, 140, 248, 0.5)",
@@ -36,10 +55,129 @@ const COLORS = {
   linkHighlight: "rgba(99, 102, 241, 0.55)",
   particleColor: "#818cf8",
   gridDot: "rgba(148, 163, 184, 0.12)",
+  labelShadow: "rgba(0,0,0,0.12)",
+  hoverRing: "rgba(129, 140, 248, 0.45)",
+  nodeGradLight: "#b0bec5",
+  nodeGradHoverLight: "#a5b4fc",
+  fallbackLinkDim: "rgba(100, 116, 139, 0.1)",
+  loaderBorder: "rgba(99, 102, 241, 0.2)",
+  loaderTop: "#6366f1",
+};
+
+const DARK_COLORS = {
+  currentNode: "#818cf8",
+  currentNodeGlow: "rgba(129, 140, 248, 0.35)",
+  currentNodeRing: "rgba(165, 180, 252, 0.5)",
+  currentLabel: "#a5b4fc",
+  node: "#64748b",
+  nodeHover: "#818cf8",
+  nodeShadow: "rgba(0, 0, 0, 0.3)",
+  label: "#94a3b8",
+  labelHover: "#cbd5e1",
+  link: "rgba(148, 163, 184, 0.25)",
+  linkHighlight: "rgba(129, 140, 248, 0.6)",
+  particleColor: "#a5b4fc",
+  gridDot: "rgba(148, 163, 184, 0.08)",
+  labelShadow: "rgba(0,0,0,0.4)",
+  hoverRing: "rgba(165, 180, 252, 0.5)",
+  nodeGradLight: "#78909c",
+  nodeGradHoverLight: "#93a5f8",
+  fallbackLinkDim: "rgba(100, 116, 139, 0.08)",
+  loaderBorder: "rgba(129, 140, 248, 0.2)",
+  loaderTop: "#818cf8",
 };
 
 const FONT_STACK =
   "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+function isDarkMode(): boolean {
+  if (typeof document === "undefined") return false;
+  const html = document.documentElement;
+  return (
+    html.classList.contains("dark") ||
+    html.getAttribute("data-theme") === "dark" ||
+    html.closest("[data-theme='dark']") !== null
+  );
+}
+
+function useTheme(): boolean {
+  const [dark, setDark] = useState(() => isDarkMode());
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setDark(isDarkMode());
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  return dark;
+}
+
+function mergeColors(
+  base: typeof LIGHT_COLORS,
+  overrides?: GraphViewColors,
+): typeof LIGHT_COLORS {
+  if (!overrides) return base;
+  return { ...base, ...overrides };
+}
+
+// ─── Error Boundary ────────────────────────────────────────────────
+
+class GraphErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  override state = { hasError: false };
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  override render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+function GraphFallback({ width, height }: { width: number; height: number }) {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+        gap: 8,
+        color: "#94a3b8",
+        fontFamily:
+          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontSize: 13,
+      }}
+    >
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <span>Graph view unavailable</span>
+    </div>
+  );
+}
 
 export interface GraphViewHandle {
   zoomIn: () => void;
@@ -49,11 +187,18 @@ export interface GraphViewHandle {
 }
 
 export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
-  { width, height, onNodeClick },
+  { width, height, onNodeClick, colors: customColors },
   ref,
 ) {
   const { pathname } = useLocation();
+  const dark = useTheme();
+  const baseColors = dark ? DARK_COLORS : LIGHT_COLORS;
+  const colors = useMemo(
+    () => mergeColors(baseColors, customColors),
+    [baseColors, customColors],
+  );
   const [ForceGraph, setForceGraph] = useState<ElementType | null>(null);
+  const [forceGraphError, setForceGraphError] = useState(false);
   const hoveredNodeRef = useRef<string | null>(null);
   const connectedSetRef = useRef<Set<string>>(new Set());
   const frameRef = useRef(0);
@@ -94,9 +239,13 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
 
   useEffect(() => {
     let active = true;
-    import("react-force-graph-2d").then((mod) => {
-      if (active) setForceGraph(() => mod.default);
-    });
+    import("react-force-graph-2d")
+      .then((mod) => {
+        if (active) setForceGraph(() => mod.default);
+      })
+      .catch(() => {
+        if (active) setForceGraphError(true);
+      });
     return () => {
       active = false;
     };
@@ -169,16 +318,19 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     [connectedToNode],
   );
 
-  const nodeColor = useCallback((node: { isCurrent?: boolean }) => {
-    return node.isCurrent ? COLORS.currentNode : COLORS.node;
-  }, []);
+  const nodeColor = useCallback(
+    (node: { isCurrent?: boolean }) => {
+      return node.isCurrent ? colors.currentNode : colors.node;
+    },
+    [colors.currentNode, colors.node],
+  );
 
   const drawBackground = useCallback(
     (ctx: CanvasRenderingContext2D, globalScale: number) => {
       const spacing = 24;
       const dotRadius = 0.6 / globalScale;
 
-      ctx.fillStyle = COLORS.gridDot;
+      ctx.fillStyle = colors.gridDot;
       const startX = Math.floor(-width / (2 * globalScale) / spacing) * spacing;
       const startY =
         Math.floor(-height / (2 * globalScale) / spacing) * spacing;
@@ -193,7 +345,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         }
       }
     },
-    [width, height],
+    [width, height, colors.gridDot],
   );
 
   const nodeCanvasObject = useCallback(
@@ -229,7 +381,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
           ny,
           radius + 14,
         );
-        outerGlow.addColorStop(0, `rgba(99, 102, 241, 0.18)`);
+        outerGlow.addColorStop(0, colors.currentNodeGlow);
         outerGlow.addColorStop(1, "rgba(99, 102, 241, 0)");
         ctx.beginPath();
         ctx.arc(nx, ny, radius + 14, 0, Math.PI * 2);
@@ -244,7 +396,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
 
         ctx.beginPath();
         ctx.arc(nx, ny, radius + 2.5, 0, Math.PI * 2);
-        ctx.strokeStyle = COLORS.currentNodeRing;
+        ctx.strokeStyle = colors.currentNodeRing;
         ctx.lineWidth = 1.5 / globalScale;
         ctx.stroke();
       }
@@ -252,7 +404,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
       if (!node.isCurrent && !isLargeGraph) {
         ctx.beginPath();
         ctx.arc(nx, ny + 0.8, radius + 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = COLORS.nodeShadow;
+        ctx.fillStyle = colors.nodeShadow;
         ctx.fill();
       }
 
@@ -265,14 +417,14 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         radius,
       );
       if (node.isCurrent) {
-        nodeGrad.addColorStop(0, "#818cf8");
-        nodeGrad.addColorStop(1, "#6366f1");
+        nodeGrad.addColorStop(0, dark ? "#a5b4fc" : "#818cf8");
+        nodeGrad.addColorStop(1, colors.currentNode);
       } else if (isHovered) {
-        nodeGrad.addColorStop(0, "#a5b4fc");
-        nodeGrad.addColorStop(1, COLORS.nodeHover);
+        nodeGrad.addColorStop(0, colors.nodeGradHoverLight);
+        nodeGrad.addColorStop(1, colors.nodeHover);
       } else {
-        nodeGrad.addColorStop(0, "#b0bec5");
-        nodeGrad.addColorStop(1, COLORS.node);
+        nodeGrad.addColorStop(0, colors.nodeGradLight);
+        nodeGrad.addColorStop(1, colors.node);
       }
 
       ctx.globalAlpha = dimmed ? 0.3 : 1;
@@ -284,7 +436,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
       if (isHovered && !node.isCurrent) {
         ctx.beginPath();
         ctx.arc(nx, ny, radius + 2, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(129, 140, 248, 0.45)";
+        ctx.strokeStyle = colors.hoverRing;
         ctx.lineWidth = 1.2 / globalScale;
         ctx.stroke();
       }
@@ -297,27 +449,27 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        ctx.fillStyle = "rgba(0,0,0,0.12)";
+        ctx.fillStyle = colors.labelShadow;
         ctx.fillText(label, nx + 0.3, ny + radius + fontSize + 0.3);
 
         if (node.isCurrent) {
-          ctx.fillStyle = COLORS.currentLabel;
+          ctx.fillStyle = colors.currentLabel;
         } else if (isHovered) {
-          ctx.fillStyle = COLORS.labelHover;
+          ctx.fillStyle = colors.labelHover;
         } else {
-          ctx.fillStyle = COLORS.label;
+          ctx.fillStyle = colors.label;
         }
         ctx.fillText(label, nx, ny + radius + fontSize);
       }
 
       ctx.globalAlpha = 1;
     },
-    [isLargeGraph],
+    [isLargeGraph, colors, dark],
   );
 
   const linkColor = useCallback(
     (link: { source?: unknown; target?: unknown }) => {
-      if (!hoveredNodeRef.current) return COLORS.link;
+      if (!hoveredNodeRef.current) return colors.link;
       const src =
         typeof link.source === "object"
           ? (link.source as ForceGraphNode).id
@@ -328,9 +480,9 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
           : link.target;
       const isConnected =
         src === hoveredNodeRef.current || tgt === hoveredNodeRef.current;
-      return isConnected ? COLORS.linkHighlight : "rgba(100, 116, 139, 0.1)";
+      return isConnected ? colors.linkHighlight : colors.fallbackLinkDim;
     },
-    [],
+    [colors.link, colors.linkHighlight, colors.fallbackLinkDim],
   );
 
   const linkWidth = useCallback(
@@ -351,6 +503,10 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     [isLargeGraph],
   );
 
+  if (forceGraphError) {
+    return <GraphFallback width={width} height={height} />;
+  }
+
   if (!ForceGraph) {
     return (
       <div
@@ -367,8 +523,8 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
             width: 20,
             height: 20,
             borderRadius: "50%",
-            border: "2px solid rgba(99, 102, 241, 0.2)",
-            borderTopColor: "#6366f1",
+            border: `2px solid ${colors.loaderBorder}`,
+            borderTopColor: colors.loaderTop,
             animation: "gv-fab-spin-in 0.8s linear infinite",
           }}
         />
@@ -377,28 +533,32 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
   }
 
   return (
-    <ForceGraph
-      ref={forceRef}
-      graphData={{ nodes: fgNodes, links: fgLinks }}
-      width={width}
-      height={height}
-      nodeRelSize={1}
-      nodeColor={nodeColor}
-      nodeCanvasObject={nodeCanvasObject}
-      nodeCanvasObjectMode={() => "replace" as const}
-      onNodeHover={handleNodeHover as (node: unknown) => void}
-      linkColor={linkColor as (link: object) => string}
-      linkWidth={linkWidth as (link: object) => number}
-      linkDirectionalParticles={isLargeGraph ? 0 : 2}
-      linkDirectionalParticleWidth={isLargeGraph ? 0 : 2}
-      linkDirectionalParticleColor={() => COLORS.particleColor}
-      onNodeClick={
-        handleNodeClick as (node: unknown, event: MouseEvent) => void
-      }
-      onRenderFramePre={drawBackground}
-      backgroundColor="transparent"
-      d3AlphaDecay={isLargeGraph ? 0.06 : 0.02}
-      d3VelocityDecay={isLargeGraph ? 0.4 : 0.3}
-    />
+    <GraphErrorBoundary
+      fallback={<GraphFallback width={width} height={height} />}
+    >
+      <ForceGraph
+        ref={forceRef}
+        graphData={{ nodes: fgNodes, links: fgLinks }}
+        width={width}
+        height={height}
+        nodeRelSize={1}
+        nodeColor={nodeColor}
+        nodeCanvasObject={nodeCanvasObject}
+        nodeCanvasObjectMode={() => "replace" as const}
+        onNodeHover={handleNodeHover as (node: unknown) => void}
+        linkColor={linkColor as (link: object) => string}
+        linkWidth={linkWidth as (link: object) => number}
+        linkDirectionalParticles={isLargeGraph ? 0 : 2}
+        linkDirectionalParticleWidth={isLargeGraph ? 0 : 2}
+        linkDirectionalParticleColor={() => colors.particleColor}
+        onNodeClick={
+          handleNodeClick as (node: unknown, event: MouseEvent) => void
+        }
+        onRenderFramePre={drawBackground}
+        backgroundColor="transparent"
+        d3AlphaDecay={isLargeGraph ? 0.06 : 0.02}
+        d3VelocityDecay={isLargeGraph ? 0.4 : 0.3}
+      />
+    </GraphErrorBoundary>
   );
 });

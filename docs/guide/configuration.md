@@ -7,9 +7,11 @@ title: Configuration
 Configure the graph view plugin in your `rspress.config.ts`:
 
 ```ts
-import graphView from '@rspress/plugin-graph-view';
+import { defineConfig } from "@rspress/core";
+import graphView from "rspress-plugin-graph-view";
 
 export default defineConfig({
+  root: "docs",
   plugins: [
     graphView({
       defaultOpen: false,
@@ -23,11 +25,84 @@ export default defineConfig({
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `defaultOpen` | `boolean` | `false` | Open graph panel by default |
+| `defaultOpen` | `boolean` | `false` | Open the graph panel by default when the site loads |
 | `profileBuild` | `boolean` | `false` | Log graph build timings, cache hits, and module reuse during route scanning |
 
-You can also enable build profiling ad hoc with `RSPRESS_GRAPH_VIEW_PROFILE=1`.
+You can also enable build profiling ad hoc with the `RSPRESS_GRAPH_VIEW_PROFILE=1` environment variable — useful for debugging slow builds without changing config.
+
+### `defaultOpen`
+
+When `true`, the graph panel opens automatically on page load instead of requiring the user to click the FAB button. Useful for documentation sites where the graph is a primary navigation tool.
+
+```ts
+graphView({ defaultOpen: true })
+```
+
+### `profileBuild`
+
+When enabled, the plugin logs detailed timing information for each graph build:
+
+```
+[rspress-plugin-graph-view] graph build | routes=42 | links=87 | cacheHits=40 | cacheMisses=2 | reusedModule=false | total=12.3ms | stat=1.2ms | parse=8.4ms | resolve=1.8ms | serialize=0.9ms
+```
+
+This helps identify bottlenecks:
+- **High `stat` time** → many files being stat'd; consider reducing doc count
+- **High `parse` time** → large files or cold cache; caching should help on rebuilds
+- **High `reusedModule` rate** → content hasn't changed; build is fully cached
+
+## Custom Colors
+
+You can override the default color palette to match your brand or theme. Colors are passed through to the runtime graph renderer:
+
+```ts
+// In your custom theme or Layout wrapper
+import { Layout } from "@rspress/core/theme-original";
+import GraphPanel from "rspress-plugin-graph-view/runtime/GraphPanel";
+
+export default function CustomLayout(props) {
+  return (
+    <Layout {...props}>
+      <GraphPanel
+        colors={{
+          currentNode: "#0ea5e9",
+          nodeHover: "#38bdf8",
+          linkHighlight: "rgba(14, 165, 233, 0.6)",
+        }}
+      />
+    </Layout>
+  );
+}
+```
+
+Available color keys: `currentNode`, `currentNodeGlow`, `currentNodeRing`, `currentLabel`, `node`, `nodeHover`, `nodeShadow`, `label`, `labelHover`, `link`, `linkHighlight`, `particleColor`, `gridDot`.
+
+Any unspecified key falls back to the default light or dark palette.
+
+## Caching
+
+The plugin uses a multi-level caching strategy:
+
+1. **File cache** — Each document is cached by `mtimeMs` + `size`. Unchanged files skip reading and parsing entirely.
+2. **Module cache** — If the graph structure hasn't changed (same files, same content), the serialized virtual module is reused without rebuilding.
+3. **Stale pruning** — Deleted or moved routes are automatically removed from the cache on the next build.
+
+This means:
+- **Cold build**: all files are read and parsed
+- **Warm rebuild** (no changes): ~0ms, fully cached
+- **Single-file change**: only the modified file is re-parsed; the rest hit cache
+
+## Peer Dependencies
+
+| Package | Version | Required |
+|---------|---------|----------|
+| `@rspress/core` | `^2.0.7` | Yes |
+| `react` | `>=18` | Yes |
+| `react-dom` | `>=18` | Yes |
+| `react-force-graph-2d` | `^1.29.1` | Yes |
+| `typescript` | `^5.9.3` | Optional |
 
 See also:
 - [Getting Started](./getting-started.md)
+- [Graph View](./graph-view.md)
 - [API Reference](../api.md)

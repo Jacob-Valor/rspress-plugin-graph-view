@@ -1,13 +1,29 @@
 {
-  "name": "@rspress/plugin-graph-view",
+  "name": "rspress-plugin-graph-view",
   "version": "0.0.1",
-  "description": "Graph view plugin for rspress",
-  "module": "/src/index.ts",
+  "description": "Interactive graph visualization for Rspress documentation sites — visualize your knowledge base connections like Obsidian",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rstackjs/rspress-plugin-graph-view"
+  },
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./runtime/*": {
+      "import": "./src/runtime/*",
+      "default": "./src/runtime/*"
+    }
+  },
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "files": [
-    "rspress",
-    "plugin",
-    "graph-view"
+    "src",
+    "theme"
   ],
   "scripts": {
     "bench:graph": "bun scripts/bench-graph-build.ts",
@@ -15,7 +31,8 @@
     "dev": "tsc -w",
     "docs:build": "rspress build",
     "docs:dev": "rspress dev",
-    "test": "bun test"
+    "test": "bun test",
+    "prepublishOnly": "bun run build && bun run test"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -24,9 +41,14 @@
   },
   "peerDependencies": {
     "@rspress/core": "^2.0.7",
+    "react": ">=18",
+    "react-dom": ">=18",
+    "react-force-graph-2d": "^1.29.1",
     "typescript": "^5.9.3"
   },
-  "dependencies": {
-    "react-force-graph-2d": "^1.29.1"
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   }
 }

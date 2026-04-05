@@ -5,10 +5,12 @@ import {
   createGraphBuildCache,
   type CollectedRoute,
 } from "./graph-data";
+import type { GraphViewColors } from "./runtime/GraphView";
 
 export interface RspressPluginGraphViewOptions {
   defaultOpen?: boolean;
   profileBuild?: boolean;
+  colors?: GraphViewColors;
 }
 
 function normalizeRoutePath(routePath: string): string {
@@ -49,7 +51,10 @@ export default function rspressPluginGraphView(
     globalUIComponents: [
       [
         path.join(__dirname, "runtime", "GraphPanel.tsx"),
-        { defaultOpen: options.defaultOpen ?? false },
+        {
+          defaultOpen: options.defaultOpen ?? false,
+          colors: options.colors,
+        },
       ],
     ],
   };

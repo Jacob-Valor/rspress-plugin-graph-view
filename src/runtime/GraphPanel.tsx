@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "@rspress/core/runtime";
-import GraphView, { type GraphViewHandle } from "./GraphView";
+import GraphView, { type GraphViewHandle, type GraphViewColors } from "./GraphView";
 
 interface GraphPanelProps {
   defaultOpen?: boolean;
+  colors?: GraphViewColors;
 }
 
 const STYLE_ID = "graph-panel-keyframes";
@@ -84,13 +85,14 @@ function ZoomButton({ children, ariaLabel, onClick }: ZoomButtonProps) {
   );
 }
 
-export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
+export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelProps) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [panelSize, setPanelSize] = useState({ width: 320, height: 240 });
   const [panelVisible, setPanelVisible] = useState(defaultOpen);
   const panelRef = useRef<HTMLDivElement>(null);
   const graphViewRef = useRef<GraphViewHandle>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     injectKeyframes();
@@ -116,6 +118,28 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
     }
   }, [isOpen]);
 
+  // Keyboard: Escape closes panel, returns focus to FAB
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        e.preventDefault();
+        setIsOpen(false);
+        fabRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
+  const handleToggle = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    fabRef.current?.focus();
+  }, []);
+
   const handleNodeClick = useCallback(
     (routePath: string) => {
       navigate(routePath);
@@ -130,8 +154,9 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
     <>
       {/* Floating Action Button */}
       <button
+        ref={fabRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         style={{
           position: "fixed",
           bottom: 24,
@@ -276,10 +301,10 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
             >
               Graph View
             </span>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              style={{
+              <button
+                type="button"
+                onClick={handleClose}
+                style={{
                 width: 22,
                 height: 22,
                 borderRadius: 6,
@@ -330,6 +355,7 @@ export default function GraphPanel({ defaultOpen = false }: GraphPanelProps) {
               width={panelSize.width}
               height={graphHeight}
               onNodeClick={handleNodeClick}
+              colors={colors}
             />
 
             {/* Zoom controls */}

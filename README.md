@@ -71,6 +71,52 @@ This plugin requires the following peer dependencies, which should already be in
 2. **Runtime**: A virtual module (`virtual-graph-data`) injects the graph data into the client. `react-force-graph-2d` renders an interactive force-directed graph with custom canvas drawing.
 3. **Caching**: File mtime + size signatures enable incremental rebuilds — unchanged files skip parsing entirely.
 
+## Architecture
+
+```
+src/
+  index.ts                          ← Plugin entry point (RspressPlugin)
+  types.ts                          ← Core shared types (GraphNode, GraphLink, GraphData)
+  build/
+    index.ts                        ← Public API: buildGraphModule, createGraphBuildCache
+    types.ts                        ← Build-time types (CollectedRoute, GraphBuildOptions)
+    cache.ts                        ← Cache management, pruning, signatures, logging
+    graph-builder.ts                ← Graph construction, route resolution, file aliases
+    link-extractor.ts               ← MDAST parsing, link/title extraction
+  runtime/
+    GraphPanel.tsx                  ← Floating panel with FAB, zoom controls, keyboard a11y
+    GraphView.tsx                   ← Canvas renderer via react-force-graph-2d, error boundary
+    canvas/
+      colors.ts                     ← Light/dark color palettes, theme merging
+    deriveGraphViewData.ts          ← View data derivation (current page + neighbors)
+    virtual-modules.d.ts            ← TypeScript declaration for virtual-graph-data
+```
+
+### Build Pipeline
+
+```
+routeGenerated hook → collect routes → buildGraphModule()
+  ├── pruneStaleDocuments()     — remove deleted routes from cache
+  ├── stat()                    — check mtime + size for each file
+  ├── cache hit?                — reuse parsed data, skip expensive work
+  ├── extractDisplayTitle()     — read frontmatter title or first heading
+  ├── extractMarkdownLinks()    — MDAST parsing → internal link targets
+  ├── createGraphSignature()    — content hash for module-level caching
+  ├── buildGraphData()          — resolve links → build adjacency graph
+  └── serialize → virtual-graph-data module
+```
+
+### Runtime Pipeline
+
+```
+GraphPanel mounts → lazy-loads react-force-graph-2d
+  ├── useLocation() → current route path
+  ├── deriveGraphViewData() → filter graph to current node neighborhood
+  ├── useTheme() → MutationObserver detects dark mode changes
+  ├── canvas rendering → custom nodeCanvasObject with gradients, shadows, hover effects
+  └── onNodeClick → navigate() to target route
+```
+
 ## Development
 
 ```bash
@@ -89,6 +135,26 @@ bun run docs:dev
 # Benchmark graph build performance
 bun run bench:graph --pages=1000 --links=6 --iterations=5
 ```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Make your changes
+4. Run tests (`bun test`) and typecheck (`bun run build`)
+5. Commit using [Conventional Commits](https://www.conventionalcommits.org/) (e.g., `feat:`, `fix:`, `docs:`)
+6. Push and open a Pull Request
+
+### Commit Convention
+
+This project uses semantic-release for automated versioning. Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` — new feature (triggers minor version bump)
+- `fix:` — bug fix (triggers patch version bump)
+- `docs:` — documentation only
+- `refactor:` — code change that neither fixes a bug nor adds a feature
+- `chore:` — maintenance tasks
+- `ci:` — CI/CD configuration changes
 
 ## License
 

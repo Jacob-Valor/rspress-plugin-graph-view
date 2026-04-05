@@ -1,9 +1,9 @@
-# @rspress/plugin-graph-view
+# rspress-plugin-graph-view
 
 Interactive graph visualization for [Rspress](https://rspress.dev/) documentation sites. Automatically extracts internal markdown links and renders them as a navigable force-directed graph — like Obsidian's graph view for your docs.
 
-![Version](https://img.shields.io/npm/v/@rspress/plugin-graph-view)
-![License](https://img.shields.io/npm/l/@rspress/plugin-graph-view)
+![Version](https://img.shields.io/npm/v/rspress-plugin-graph-view)
+![License](https://img.shields.io/npm/l/rspress-plugin-graph-view)
 
 ## Features
 
@@ -17,11 +17,11 @@ Interactive graph visualization for [Rspress](https://rspress.dev/) documentatio
 ## Installation
 
 ```bash
-bun add @rspress/plugin-graph-view
+bun add rspress-plugin-graph-view
 # or
-npm install @rspress/plugin-graph-view
+npm install rspress-plugin-graph-view
 # or
-pnpm add @rspress/plugin-graph-view
+pnpm add rspress-plugin-graph-view
 ```
 
 ## Usage
@@ -30,7 +30,7 @@ Add the plugin to your `rspress.config.ts`:
 
 ```ts
 import { defineConfig } from "@rspress/core";
-import graphView from "@rspress/plugin-graph-view";
+import graphView from "rspress-plugin-graph-view";
 
 export default defineConfig({
   // ...your config

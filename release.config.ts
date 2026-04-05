@@ -1,7 +1,7 @@
 export default {
   branches: [
     { name: "main", channel: false },
-    { name: "dev", channel: "dev" },
+    { name: "dev", channel: "dev", prerelease: "dev" },
     { name: "next", channel: "next", prerelease: true },
   ],
   plugins: [

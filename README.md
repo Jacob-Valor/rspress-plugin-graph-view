@@ -9,6 +9,8 @@ Interactive graph visualization for [Rspress](https://rspress.dev/) documentatio
 
 - **Automatic link detection** — uses MDAST parsing to extract all markdown link formats (inline, reference, autolinks) while ignoring links inside code blocks
 - **Click to navigate** — click any node to jump to that page
+- **Hover tooltip** — hovering a node shows its full page title as an HTML overlay
+- **Stats bar** — the panel footer displays the current node and link count
 - **Dark mode** — seamlessly adapts to light and dark themes
 - **Build caching** — incremental rebuilds with mtime-based cache invalidation
 - **Large graph optimization** — automatically disables expensive visual effects for graphs with 80+ nodes
@@ -49,10 +51,40 @@ graphView({
 
   // Log build timing diagnostics (default: false)
   profileBuild: true,
+
+  // Override any canvas color token (all keys optional)
+  colors: {
+    currentNode: "#f59e0b",
+    currentNodeGlow: "rgba(245, 158, 11, 0.25)",
+    currentNodeGlowFade: "rgba(245, 158, 11, 0)",
+    node: "#94a3b8",
+    link: "rgba(100, 116, 139, 0.35)",
+  },
 })
 ```
 
 You can also enable profiling temporarily with the `RSPRESS_GRAPH_VIEW_PROFILE=1` environment variable.
+
+### Color customization
+
+Every visual token used by the canvas renderer can be overridden via the `colors` option:
+
+| Key | Description |
+| --- | --- |
+| `currentNode` | Fill color of the active page node |
+| `currentNodeGlow` | Inner glow color (with opacity) |
+| `currentNodeGlowFade` | Transparent edge of the outer glow gradient |
+| `currentNodeRing` | Pulsing ring stroke color |
+| `currentLabel` | Label color of the active page node |
+| `node` | Default node fill color |
+| `nodeHover` | Node fill on hover |
+| `nodeShadow` | Node drop shadow |
+| `label` | Default label text color |
+| `labelHover` | Label text color on hover |
+| `link` | Default link stroke color |
+| `linkHighlight` | Link stroke color when a connected node is hovered |
+| `particleColor` | Directional particle color on links |
+| `gridDot` | Background grid dot color |
 
 ### Peer Dependencies
 
@@ -64,6 +96,7 @@ This plugin requires the following peer dependencies, which should already be in
 | `react` | `>=19` |
 | `react-dom` | `>=19` |
 | `react-force-graph-2d` | `^1.29.1` |
+| `typescript` | `>=5.0` (optional) |
 
 ## How It Works
 
@@ -114,6 +147,7 @@ GraphPanel mounts → lazy-loads react-force-graph-2d
   ├── deriveGraphViewData() → filter graph to current node neighborhood
   ├── useTheme() → MutationObserver detects dark mode changes
   ├── canvas rendering → custom nodeCanvasObject with gradients, shadows, hover effects
+  ├── onNodeHoverChange → HTML tooltip overlay + stats bar update
   └── onNodeClick → navigate() to target route
 ```
 

@@ -6,6 +6,7 @@ export const FONT_STACK =
 export interface CanvasColors {
   currentNode: string;
   currentNodeGlow: string;
+  currentNodeGlowFade: string;
   currentNodeRing: string;
   currentLabel: string;
   node: string;
@@ -29,6 +30,7 @@ export interface CanvasColors {
 export const LIGHT_COLORS: CanvasColors = {
   currentNode: "#6366f1",
   currentNodeGlow: "rgba(99, 102, 241, 0.25)",
+  currentNodeGlowFade: "rgba(99, 102, 241, 0)",
   currentNodeRing: "rgba(129, 140, 248, 0.5)",
   currentLabel: "#6366f1",
   node: "#94a3b8",
@@ -39,7 +41,7 @@ export const LIGHT_COLORS: CanvasColors = {
   link: "rgba(100, 116, 139, 0.35)",
   linkHighlight: "rgba(99, 102, 241, 0.55)",
   particleColor: "#818cf8",
-  gridDot: "rgba(148, 163, 184, 0.12)",
+  gridDot: "rgba(148, 163, 184, 0.18)",
   labelShadow: "rgba(0,0,0,0.12)",
   hoverRing: "rgba(129, 140, 248, 0.45)",
   nodeGradLight: "#b0bec5",
@@ -52,6 +54,7 @@ export const LIGHT_COLORS: CanvasColors = {
 export const DARK_COLORS: CanvasColors = {
   currentNode: "#818cf8",
   currentNodeGlow: "rgba(129, 140, 248, 0.35)",
+  currentNodeGlowFade: "rgba(129, 140, 248, 0)",
   currentNodeRing: "rgba(165, 180, 252, 0.5)",
   currentLabel: "#a5b4fc",
   node: "#64748b",
@@ -62,7 +65,7 @@ export const DARK_COLORS: CanvasColors = {
   link: "rgba(148, 163, 184, 0.25)",
   linkHighlight: "rgba(129, 140, 248, 0.6)",
   particleColor: "#a5b4fc",
-  gridDot: "rgba(148, 163, 184, 0.08)",
+  gridDot: "rgba(148, 163, 184, 0.12)",
   labelShadow: "rgba(0,0,0,0.4)",
   hoverRing: "rgba(165, 180, 252, 0.5)",
   nodeGradLight: "#78909c",

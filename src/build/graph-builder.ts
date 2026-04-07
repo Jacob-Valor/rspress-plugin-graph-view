@@ -2,6 +2,7 @@ import * as path from "node:path";
 import type { GraphData, GraphLink, GraphNode } from "../types";
 import type { CollectedRoute } from "./types";
 import type { ScannedRouteDocument } from "./cache";
+import { normalizeRoutePath } from "../utils";
 
 export function buildGraphData(
   routes: CollectedRoute[],
@@ -62,11 +63,6 @@ export function buildGraphData(
   }));
 
   return { nodes, links };
-}
-
-function normalizeRoutePath(routePath: string): string {
-  const trimmed = routePath.replace(/\/$/, "");
-  return trimmed || "/";
 }
 
 function buildFileAliases(route: CollectedRoute): string[] {

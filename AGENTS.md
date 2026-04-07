@@ -20,13 +20,13 @@ This is an **Rspress plugin** that builds an interactive force-directed graph of
 
 ### Two-phase execution
 
-**Build time** (`src/index.ts` → `src/graph-data.ts`):
+**Build time** (`src/index.ts` → `src/build/`):
 - Plugin hooks `routeGenerated` to collect routes, then `addRuntimeModules` to produce a virtual module (`virtual-graph-data`)
 - Reads each `.md`/`.mdx` file, extracts `[link](./path.md)` patterns, resolves relative/absolute paths
 - Multi-level cache: file-level (mtime+size), module-level (content signature), stale pruning
 
 **Runtime** (`src/runtime/`):
-- `GraphPanel.tsx` — floating panel with FAB button, zoom controls, keyboard a11y (Escape closes)
+- `GraphPanel.tsx` — floating panel with FAB button, zoom pill, stats bar, hover tooltip, keyboard a11y (`G` opens, `Escape` closes)
 - `GraphView.tsx` — canvas-rendered force graph via `react-force-graph-2d` (lazy-loaded), error boundary, dark mode via MutationObserver
 - `deriveGraphViewData.ts` — builds adjacency index, shows only current page + neighbors, flags large graphs (80+ nodes)
 
@@ -35,7 +35,8 @@ This is an **Rspress plugin** that builds an interactive force-directed graph of
 | Path | Purpose |
 |------|---------|
 | `src/index.ts` | Plugin entry, exported as default |
-| `src/graph-data.ts` | Build-time graph builder + cache |
+| `src/utils.ts` | Shared utilities (`normalizeRoutePath`) |
+| `src/build/` | Build-time graph builder + cache |
 | `src/runtime/` | Client-side React components |
 | `theme/index.tsx` | Rspress theme re-export (passthrough) |
 | `docs/` | Plugin documentation site |
@@ -52,7 +53,7 @@ This is an **Rspress plugin** that builds an interactive force-directed graph of
 - **Strict TypeScript** — `noUncheckedIndexedAccess`, `noImplicitOverride`, `verbatimModuleSyntax`
 - **`react-force-graph-2d` is a peer dep** — lazy-loaded at runtime, not bundled
 - **Dark mode** — detects `<html class="dark">`, `<html data-theme="dark">`, or parent `[data-theme='dark']`
-- **Color customization** — `GraphViewColors` interface (13 keys), passed through plugin options → GraphPanel → GraphView
+- **Color customization** — `GraphViewColors` interface (15 keys), passed through plugin options → GraphPanel → GraphView
 - **Error boundary** — `GraphErrorBoundary` wraps ForceGraph; import failures show fallback UI
 - **CI branches** — `main` and `dev`
 

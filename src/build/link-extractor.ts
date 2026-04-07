@@ -15,15 +15,15 @@ export function extractMarkdownLinks(source: string): string[] {
 }
 
 export function extractDisplayTitle(source: string): string | undefined {
-  const frontmatterMatch = source.match(/^---\n([\s\S]*?)\n---/);
+  const frontmatterMatch = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (frontmatterMatch?.[1]) {
-    const titleMatch = frontmatterMatch[1].match(/^title:\s*(.+)$/m);
+    const titleMatch = frontmatterMatch[1].match(/^title:\s*(.+?)\r?$/m);
     if (titleMatch?.[1]) {
       return titleMatch[1].trim().replace(/^['"]|['"]$/g, "");
     }
   }
 
-  const headingMatch = source.match(/^#\s+(.+)$/m);
+  const headingMatch = source.match(/^#\s+(.+?)\r?$/m);
   if (headingMatch?.[1]) {
     return headingMatch[1].trim();
   }

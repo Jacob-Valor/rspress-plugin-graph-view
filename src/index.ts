@@ -16,7 +16,7 @@ export interface RspressPluginGraphViewOptions {
   colors?: GraphViewColors;
 }
 
-export default function rspressPluginGraphView(
+export function pluginGraphview(
   options: RspressPluginGraphViewOptions = {},
 ): RspressPlugin {
   let collectedRoutes: CollectedRoute[] = [];
@@ -57,3 +57,5 @@ export default function rspressPluginGraphView(
     ],
   };
 }
+
+export default pluginGraphview;

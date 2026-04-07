@@ -28,6 +28,7 @@ import {
 export interface GraphViewColors {
   currentNode?: string;
   currentNodeGlow?: string;
+  currentNodeGlowFade?: string;
   currentNodeRing?: string;
   currentLabel?: string;
   node?: string;
@@ -45,6 +46,7 @@ interface GraphViewProps {
   width: number;
   height: number;
   onNodeClick?: (routePath: string) => void;
+  onNodeHoverChange?: (label: string | null, x: number, y: number) => void;
   colors?: GraphViewColors;
 }
 
@@ -133,10 +135,11 @@ export interface GraphViewHandle {
   zoomOut: () => void;
   zoomReset: () => void;
   zoomToFit: () => void;
+  getStats: () => { nodes: number; links: number };
 }
 
 export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
-  { width, height, onNodeClick, colors: customColors },
+  { width, height, onNodeClick, onNodeHoverChange, colors: customColors },
   ref,
 ) {
   const { pathname } = useLocation();
@@ -152,6 +155,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
   const connectedSetRef = useRef<Set<string>>(new Set());
   const frameRef = useRef(0);
   const forceRef = useRef<{ d3ReheatSimulation?: () => void } | null>(null);
+  const statsRef = useRef({ nodes: 0, links: 0 });
 
   useImperativeHandle(
     ref,
@@ -182,6 +186,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
           fg.zoomToFit(300, 16);
         }
       },
+      getStats: () => ({ ...statsRef.current }),
     }),
     [],
   );
@@ -219,10 +224,11 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     nodes: fgNodes,
     links: fgLinks,
     isLargeGraph,
-  } = useMemo(
-    () => deriveGraphViewData(graphData, graphIndex, currentRoutePath),
-    [graphIndex, currentRoutePath],
-  );
+  } = useMemo(() => {
+    const derived = deriveGraphViewData(graphData, graphIndex, currentRoutePath);
+    statsRef.current = { nodes: derived.nodes.length, links: derived.links.length };
+    return derived;
+  }, [graphIndex, currentRoutePath]);
 
   const connectedToNode = useCallback(
     (nodeId: string): Set<string> => {
@@ -255,16 +261,18 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
   );
 
   const handleNodeHover = useCallback(
-    (node: ForceGraphNode | null) => {
+    (node: (ForceGraphNode & { x?: number; y?: number }) | null) => {
       if (node?.id) {
         hoveredNodeRef.current = node.id;
         connectedSetRef.current = connectedToNode(node.id);
+        onNodeHoverChange?.(node.label ?? null, node.x ?? 0, node.y ?? 0);
       } else {
         hoveredNodeRef.current = null;
         connectedSetRef.current.clear();
+        onNodeHoverChange?.(null, 0, 0);
       }
     },
-    [connectedToNode],
+    [connectedToNode, onNodeHoverChange],
   );
 
   const nodeColor = useCallback(
@@ -331,7 +339,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
           radius + 14,
         );
         outerGlow.addColorStop(0, colors.currentNodeGlow);
-        outerGlow.addColorStop(1, "rgba(99, 102, 241, 0)");
+        outerGlow.addColorStop(1, colors.currentNodeGlowFade);
         ctx.beginPath();
         ctx.arc(nx, ny, radius + 14, 0, Math.PI * 2);
         ctx.fillStyle = outerGlow;
@@ -474,7 +482,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
             borderRadius: "50%",
             border: `2px solid ${colors.loaderBorder}`,
             borderTopColor: colors.loaderTop,
-            animation: "gv-fab-spin-in 0.8s linear infinite",
+            animation: "gv-spinner 0.8s linear infinite",
           }}
         />
       </div>
@@ -494,7 +502,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         nodeColor={nodeColor}
         nodeCanvasObject={nodeCanvasObject}
         nodeCanvasObjectMode={() => "replace" as const}
-        onNodeHover={handleNodeHover as (node: unknown) => void}
+        onNodeHover={handleNodeHover as (node: unknown, prevNode: unknown) => void}
         linkColor={linkColor as (link: object) => string}
         linkWidth={linkWidth as (link: object) => number}
         linkDirectionalParticles={isLargeGraph ? 0 : 2}

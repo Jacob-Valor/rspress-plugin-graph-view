@@ -6,7 +6,7 @@ import {
   createGraphBuildCache,
   type CollectedRoute,
   type GraphBuildDiagnostics,
-} from "../src/graph-data";
+} from "../src/build";
 
 type GraphShape = "sequential" | "ring" | "hub" | "clustered";
 

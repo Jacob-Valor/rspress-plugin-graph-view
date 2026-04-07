@@ -1,0 +1,103 @@
+import { describe, expect, test } from "bun:test";
+import { createGraphBuildCache, createGraphSignature, pruneStaleDocuments } from "./cache";
+import type { CollectedRoute } from "./types";
+
+function makeRoute(routePath: string): CollectedRoute {
+  return {
+    routePath,
+    absolutePath: `/docs${routePath}.md`,
+    relativePath: `${routePath}.md`,
+    pageName: routePath.slice(1) || "index",
+  };
+}
+
+function makeScannedDocument(routePath: string, mtimeMs = 1000, size = 100) {
+  return {
+    route: makeRoute(routePath),
+    mtimeMs,
+    size,
+    inferredTitle: undefined,
+    rawLinks: [],
+  };
+}
+
+describe("pruneStaleDocuments", () => {
+  test("removes cached entries for routes that no longer exist", () => {
+    const cache = createGraphBuildCache();
+    cache.documents.set("/docs/removed.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
+    cache.documents.set("/docs/kept.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
+
+    const activeRoutes: CollectedRoute[] = [
+      { routePath: "/kept", absolutePath: "/docs/kept.md", relativePath: "kept.md", pageName: "kept" },
+    ];
+
+    pruneStaleDocuments(cache, activeRoutes);
+
+    expect(cache.documents.has("/docs/kept.md")).toBe(true);
+    expect(cache.documents.has("/docs/removed.md")).toBe(false);
+  });
+
+  test("leaves cache untouched when all routes are still active", () => {
+    const cache = createGraphBuildCache();
+    cache.documents.set("/docs/page.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
+
+    const routes: CollectedRoute[] = [
+      { routePath: "/page", absolutePath: "/docs/page.md", relativePath: "page.md", pageName: "page" },
+    ];
+
+    pruneStaleDocuments(cache, routes);
+
+    expect(cache.documents.size).toBe(1);
+  });
+
+  test("clears entire cache when route list is empty", () => {
+    const cache = createGraphBuildCache();
+    cache.documents.set("/docs/a.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
+    cache.documents.set("/docs/b.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
+
+    pruneStaleDocuments(cache, []);
+
+    expect(cache.documents.size).toBe(0);
+  });
+});
+
+describe("createGraphSignature", () => {
+  test("produces the same signature regardless of document order", () => {
+    const docs = [
+      makeScannedDocument("/a"),
+      makeScannedDocument("/b"),
+    ];
+
+    const sigAB = createGraphSignature(docs);
+    const sigBA = createGraphSignature([docs[1]!, docs[0]!]);
+
+    expect(sigAB).toBe(sigBA);
+  });
+
+  test("produces a different signature when mtime changes", () => {
+    const before = [makeScannedDocument("/a", 1000)];
+    const after = [makeScannedDocument("/a", 2000)];
+
+    expect(createGraphSignature(before)).not.toBe(createGraphSignature(after));
+  });
+
+  test("produces a different signature when a route is added", () => {
+    const one = [makeScannedDocument("/a")];
+    const two = [makeScannedDocument("/a"), makeScannedDocument("/b")];
+
+    expect(createGraphSignature(one)).not.toBe(createGraphSignature(two));
+  });
+
+  test("produces a different signature when file size changes", () => {
+    const before = [makeScannedDocument("/a", 1000, 100)];
+    const after = [makeScannedDocument("/a", 1000, 200)];
+
+    expect(createGraphSignature(before)).not.toBe(createGraphSignature(after));
+  });
+
+  test("returns a non-empty string", () => {
+    const sig = createGraphSignature([makeScannedDocument("/a")]);
+    expect(typeof sig).toBe("string");
+    expect(sig.length).toBeGreaterThan(0);
+  });
+});

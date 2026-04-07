@@ -1,4 +1,6 @@
 import * as path from "node:path";
+
+const pluginDir = import.meta.dirname;
 import type { RouteMeta, RspressPlugin } from "@rspress/core";
 import {
   buildGraphModule,
@@ -6,16 +8,12 @@ import {
   type CollectedRoute,
 } from "./build";
 import type { GraphViewColors } from "./runtime/GraphView";
+import { normalizeRoutePath } from "./utils";
 
 export interface RspressPluginGraphViewOptions {
   defaultOpen?: boolean;
   profileBuild?: boolean;
   colors?: GraphViewColors;
-}
-
-function normalizeRoutePath(routePath: string): string {
-  const trimmed = routePath.replace(/\/$/, "");
-  return trimmed || "/";
 }
 
 export default function rspressPluginGraphView(
@@ -50,7 +48,7 @@ export default function rspressPluginGraphView(
 
     globalUIComponents: [
       [
-        path.join(__dirname, "runtime", "GraphPanel.tsx"),
+        path.join(pluginDir, "runtime", "GraphPanel.tsx"),
         {
           defaultOpen: options.defaultOpen ?? false,
           colors: options.colors,

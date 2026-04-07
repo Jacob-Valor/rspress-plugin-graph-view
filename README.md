@@ -32,11 +32,11 @@ Add the plugin to your `rspress.config.ts`:
 
 ```ts
 import { defineConfig } from "@rspress/core";
-import graphView from "rspress-plugin-graph-view";
+import { pluginGraphview } from "rspress-plugin-graph-view";
 
 export default defineConfig({
   // ...your config
-  plugins: [graphView()],
+  plugins: [pluginGraphview()],
 });
 ```
 
@@ -45,7 +45,7 @@ That's it. A floating action button will appear in the bottom-right corner of yo
 ### Options
 
 ```ts
-graphView({
+pluginGraphview({
   // Open the graph panel by default (default: false)
   defaultOpen: true,
 
@@ -93,8 +93,8 @@ This plugin requires the following peer dependencies, which should already be in
 | Package | Version |
 | --- | --- |
 | `@rspress/core` | `^2.0.7` |
-| `react` | `>=19` |
-| `react-dom` | `>=19` |
+| `react` | `^19` |
+| `react-dom` | `^19` |
 | `react-force-graph-2d` | `^1.29.1` |
 | `typescript` | `>=5.0` (optional) |
 

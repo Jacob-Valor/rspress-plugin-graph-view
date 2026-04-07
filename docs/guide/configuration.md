@@ -8,12 +8,12 @@ Configure the graph view plugin in your `rspress.config.ts`:
 
 ```ts
 import { defineConfig } from "@rspress/core";
-import graphView from "rspress-plugin-graph-view";
+import { pluginGraphview } from "rspress-plugin-graph-view";
 
 export default defineConfig({
   root: "docs",
   plugins: [
-    graphView({
+    pluginGraphview({
       defaultOpen: false,
       profileBuild: false,
     }),
@@ -35,7 +35,7 @@ You can also enable build profiling ad hoc with the `RSPRESS_GRAPH_VIEW_PROFILE=
 When `true`, the graph panel opens automatically on page load instead of requiring the user to click the FAB button. Useful for documentation sites where the graph is a primary navigation tool.
 
 ```ts
-graphView({ defaultOpen: true })
+pluginGraphview({ defaultOpen: true })
 ```
 
 ### `profileBuild`
@@ -97,8 +97,8 @@ This means:
 | Package | Version | Required |
 |---------|---------|----------|
 | `@rspress/core` | `^2.0.7` | Yes |
-| `react` | `>=18` | Yes |
-| `react-dom` | `>=18` | Yes |
+| `react` | `^19` | Yes |
+| `react-dom` | `^19` | Yes |
 | `react-force-graph-2d` | `^1.29.1` | Yes |
 | `typescript` | `^5.9.3` | Optional |
 

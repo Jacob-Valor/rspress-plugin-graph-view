@@ -11,7 +11,7 @@ Think of it as [Obsidian's graph view](https://obsidian.md) for your docs. The p
 ## Prerequisites
 
 - [Rspress](https://rspress.dev/) `^2.0.7` or later
-- React `>=18`
+- React `^19`
 
 ## Installation
 
@@ -31,11 +31,11 @@ Add the plugin to your `rspress.config.ts`:
 
 ```ts
 import { defineConfig } from "@rspress/core";
-import graphView from "rspress-plugin-graph-view";
+import { pluginGraphview } from "rspress-plugin-graph-view";
 
 export default defineConfig({
   root: "docs",
-  plugins: [graphView()],
+  plugins: [pluginGraphview()],
 });
 ```
 

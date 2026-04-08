@@ -7,7 +7,6 @@
     "types": ["bun", "react"],
     "moduleDetection": "force",
     "jsx": "react-jsx",
-    "rootDir": "./src",
     "outDir": "dist",
     "paths": {
       "rspress-plugin-graph-view": ["./src/index.ts"],
@@ -31,5 +30,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
   },
-  "include": ["src"],
+  "include": ["src", "scripts"],
 }

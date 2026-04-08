@@ -284,7 +284,11 @@ function buildRingTargets(
   }
 
   if (targets.size < linksPerPage) {
-    for (const target of buildSequentialTargets(pageIndex, pageCount, linksPerPage)) {
+    for (const target of buildSequentialTargets(
+      pageIndex,
+      pageCount,
+      linksPerPage,
+    )) {
       targets.add(target);
       if (targets.size >= linksPerPage) {
         break;
@@ -400,6 +404,9 @@ async function runIncrementalBuilds(
   await buildGraphModule(routes, cache, benchmarkBuildOptions);
 
   const targetRoute = routes[Math.min(1, routes.length - 1)];
+  if (!targetRoute) {
+    throw new Error("No routes available for incremental build benchmark");
+  }
   const targetPageIndex =
     targetRoute.routePath === "/" ? 0 : Number(targetRoute.routePath.slice(6));
 

@@ -2,13 +2,17 @@
 
 ## Plugin Exports
 
-### `default` — Plugin Factory
+### `pluginGraphview` — Plugin Factory
 
 ```ts
-import graphView from 'rspress-plugin-graph-view';
+import { pluginGraphview } from 'rspress-plugin-graph-view';
 ```
 
-Creates an Rspress plugin instance.
+Creates an Rspress plugin instance. A default export alias is also available for backward compatibility:
+
+```ts
+import pluginGraphview from 'rspress-plugin-graph-view';
+```
 
 ### `RspressPluginGraphViewOptions`
 
@@ -16,6 +20,7 @@ Creates an Rspress plugin instance.
 interface RspressPluginGraphViewOptions {
   defaultOpen?: boolean;
   profileBuild?: boolean;
+  colors?: GraphViewColors;
 }
 ```
 

@@ -25,6 +25,7 @@
     "type": "git",
     "url": "https://github.com/Jacob-Valor/rspress-plugin-graph-view.git"
   },
+  "packageManager": "bun@1.3.13",
   "license": "MIT",
   "author": "Jacob-Valor <jacob-programmer@tuta.io> (https://github.com/Jacob-Valor)",
   "main": "./src/index.ts",
@@ -53,16 +54,19 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "semantic-release": "^25.0.3",
-    "typescript": "^6.0.2"
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "semantic-release": "25.0.3",
+    "typescript": "6.0.3"
+  },
+  "publishConfig": {
+    "provenance": true
   },
   "peerDependencies": {
-    "@rspress/core": "^2.0.7",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-force-graph-2d": "^1.29.1",
+    "@rspress/core": "2.0.7",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-force-graph-2d": "1.29.1",
     "typescript": ">=5.0"
   },
   "peerDependenciesMeta": {
@@ -71,6 +75,6 @@
     }
   },
   "dependencies": {
-    "rspress-plugin-devkit": "^1.0.0"
+    "rspress-plugin-devkit": "1.0.0"
   }
 }

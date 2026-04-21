@@ -30,6 +30,8 @@ export interface GraphViewColors {
   currentNodeGlow?: string;
   currentNodeGlowFade?: string;
   currentNodeRing?: string;
+  currentNodePulseRing?: string;
+  currentNodeGradLight?: string;
   currentLabel?: string;
   node?: string;
   nodeHover?: string;
@@ -95,7 +97,15 @@ class GraphErrorBoundary extends Component<
   }
 }
 
-function GraphFallback({ width, height }: { width: number; height: number }) {
+function GraphFallback({
+  width,
+  height,
+  color,
+}: {
+  width: number;
+  height: number;
+  color: string;
+}) {
   return (
     <div
       style={{
@@ -106,7 +116,7 @@ function GraphFallback({ width, height }: { width: number; height: number }) {
         justifyContent: "center",
         flexDirection: "column",
         gap: 8,
-        color: "#94a3b8",
+        color,
         fontFamily: FONT_STACK,
         fontSize: 13,
       }}
@@ -347,7 +357,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
 
         ctx.beginPath();
         ctx.arc(nx, ny, pulseRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(129, 140, 248, ${pulseAlpha})`;
+        ctx.strokeStyle = colors.currentNodePulseRing.replace("ALPHA", `${pulseAlpha}`);
         ctx.lineWidth = 1.5 / globalScale;
         ctx.stroke();
 
@@ -374,7 +384,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         radius,
       );
       if (node.isCurrent) {
-        nodeGrad.addColorStop(0, dark ? "#a5b4fc" : "#818cf8");
+        nodeGrad.addColorStop(0, colors.currentNodeGradLight);
         nodeGrad.addColorStop(1, colors.currentNode);
       } else if (isHovered) {
         nodeGrad.addColorStop(0, colors.nodeGradHoverLight);
@@ -421,7 +431,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
 
       ctx.globalAlpha = 1;
     },
-    [isLargeGraph, colors, dark],
+    [isLargeGraph, colors],
   );
 
   const linkColor = useCallback(
@@ -461,7 +471,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
   );
 
   if (forceGraphError) {
-    return <GraphFallback width={width} height={height} />;
+    return <GraphFallback width={width} height={height} color={colors.label} />;
   }
 
   if (!ForceGraph) {
@@ -491,7 +501,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
 
   return (
     <GraphErrorBoundary
-      fallback={<GraphFallback width={width} height={height} />}
+      fallback={<GraphFallback width={width} height={height} color={colors.label} />}
     >
       <ForceGraph
         ref={forceRef}

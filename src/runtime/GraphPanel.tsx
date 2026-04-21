@@ -111,7 +111,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [panelSize, setPanelSize] = useState({ width: 360, height: 280 });
+  const [panelSize, setPanelSize] = useState({ width: 320, height: 252 });
   const [panelVisible, setPanelVisible] = useState(defaultOpen);
   const [stats, setStats] = useState<{ nodes: number; links: number } | null>(null);
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null);
@@ -127,8 +127,8 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
 
   useEffect(() => {
     const updateSize = () => {
-      const w = Math.min(460, Math.max(300, window.innerWidth * 0.4));
-      const h = Math.min(340, Math.max(240, window.innerHeight * 0.4));
+      const w = Math.min(400, Math.max(280, window.innerWidth * 0.36));
+      const h = Math.min(312, Math.max(220, window.innerHeight * 0.36));
       setPanelSize({ width: w, height: h });
     };
     updateSize();
@@ -217,8 +217,8 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
     [],
   );
 
-  const FOOTER_HEIGHT = 24;
-  const HEADER_HEIGHT = 36;
+  const FOOTER_HEIGHT = 22;
+  const HEADER_HEIGHT = 34;
   const graphHeight = panelSize.height - HEADER_HEIGHT - FOOTER_HEIGHT;
 
   return (
@@ -346,7 +346,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               alignItems: "center",
               justifyContent: "space-between",
               height: HEADER_HEIGHT,
-              padding: "0 10px 0 12px",
+               padding: "0 8px 0 10px",
               borderBottom:
                 "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 40%, transparent)",
               background:
@@ -557,7 +557,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   fontWeight: 500,
                   fontFamily:
                     "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                  color: "var(--rp-c-text, #1e293b)",
+                   color: "var(--rp-c-text-1, #334155)",
                   whiteSpace: "nowrap",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                   animation: "gv-tooltip-in 0.12s ease-out",

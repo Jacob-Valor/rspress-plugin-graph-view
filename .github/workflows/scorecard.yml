@@ -28,12 +28,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
       - name: Run OpenSSF Scorecard analysis
-        uses: ossf/scorecard-action@f49aabe0b5af0936a0987cfb85d86b75b98e9b6a # v2.4.1
+        uses: ossf/scorecard-action@f49aabe0b5af0936a0987cfb85d86b75731b0186 # v2.4.1
         with:
           results_file: results.sarif
           results_format: sarif
@@ -48,6 +48,6 @@ jobs:
           retention-days: 5
 
       - name: Upload Scorecard results to GitHub code scanning
-        uses: github/codeql-action/upload-sarif@b56d1d8f9277d541d3e46a5c0e2cbedee3b9dae0 # v3.29.0
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
         with:
           sarif_file: results.sarif

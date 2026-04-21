@@ -1,0 +1,36 @@
+name: CodeQL SAST
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  schedule:
+    - cron: "25 8 * * 6" # Every Saturday at 08:25 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.2.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@b56d1d8f9277d541d3e46a5c0e2cbedee3b9dae0 # v3.29.0
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@b56d1d8f9277d541d3e46a5c0e2cbedee3b9dae0 # v3.29.0
+        with:
+          category: "/language:javascript-typescript"

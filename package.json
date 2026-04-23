@@ -77,5 +77,8 @@
   "dependencies": {
     "mdast-util-from-markdown": "2.0.2",
     "unist-util-visit": "5.0.0"
+  },
+  "overrides": {
+    "entities": "8.0.0"
   }
 }

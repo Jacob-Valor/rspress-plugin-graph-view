@@ -75,6 +75,7 @@
     }
   },
   "dependencies": {
-    "rspress-plugin-devkit": "1.0.0"
+    "mdast-util-from-markdown": "2.0.2",
+    "unist-util-visit": "5.0.0"
   }
 }

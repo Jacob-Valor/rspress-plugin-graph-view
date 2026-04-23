@@ -1,10 +1,11 @@
-import { MDASTFromMarkdown, unistVisit } from "rspress-plugin-devkit";
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { visit } from "unist-util-visit";
 
 export function extractMarkdownLinks(source: string): string[] {
-  const tree = MDASTFromMarkdown(source);
+  const tree = fromMarkdown(source);
   const links: string[] = [];
 
-  unistVisit(tree, "link", (node) => {
+  visit(tree, "link", (node) => {
     const target = cleanLinkTarget(node.url);
     if (isInternalDocLink(target)) {
       links.push(target);

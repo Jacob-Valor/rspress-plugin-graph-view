@@ -2,9 +2,22 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "@rspress/core/runtime";
 import GraphView, { type GraphViewHandle, type GraphViewColors } from "./GraphView";
 
+type PanelPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
+
+interface PanelSizeOptions {
+  minWidth?: number;
+  maxWidth?: number;
+  minHeight?: number;
+  maxHeight?: number;
+}
+
 interface GraphPanelProps {
   defaultOpen?: boolean;
   colors?: GraphViewColors;
+  panelPosition?: PanelPosition;
+  panelSize?: PanelSizeOptions;
+  initialZoom?: number;
+  keyboardShortcut?: string;
 }
 
 const STYLE_ID = "graph-panel-keyframes";
@@ -107,7 +120,14 @@ function GraphIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelProps) {
+export default function GraphPanel({
+  defaultOpen = false,
+  colors,
+  panelPosition = "bottom-right",
+  panelSize: panelSizeOpts,
+  initialZoom = 1,
+  keyboardShortcut = "g",
+}: GraphPanelProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -127,14 +147,18 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
 
   useEffect(() => {
     const updateSize = () => {
-      const w = Math.min(400, Math.max(280, window.innerWidth * 0.36));
-      const h = Math.min(312, Math.max(220, window.innerHeight * 0.36));
+      const minW = panelSizeOpts?.minWidth ?? 280;
+      const maxW = panelSizeOpts?.maxWidth ?? 400;
+      const minH = panelSizeOpts?.minHeight ?? 220;
+      const maxH = panelSizeOpts?.maxHeight ?? 312;
+      const w = Math.min(maxW, Math.max(minW, window.innerWidth * 0.36));
+      const h = Math.min(maxH, Math.max(minH, window.innerHeight * 0.36));
       setPanelSize({ width: w, height: h });
     };
     updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
-  }, []);
+  }, [panelSizeOpts]);
 
   useEffect(() => {
     if (isOpen) {
@@ -164,14 +188,14 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
         target.tagName === "TEXTAREA" ||
         target.tagName === "SELECT" ||
         target.isContentEditable;
-      if (e.key === "g" && !isEditable && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (e.key.toLowerCase() === keyboardShortcut && !isEditable && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         setIsOpen((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, keyboardShortcut]);
 
   useEffect(() => {
     const s = graphViewRef.current?.getStats();
@@ -221,6 +245,20 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
   const HEADER_HEIGHT = 34;
   const graphHeight = panelSize.height - HEADER_HEIGHT - FOOTER_HEIGHT;
 
+  const positionStyles = (() => {
+    switch (panelPosition) {
+      case "bottom-left":
+        return { fab: { bottom: 24, left: 24 }, panel: { bottom: 80, left: 24 } };
+      case "top-right":
+        return { fab: { top: 24, right: 24 }, panel: { top: 80, right: 24 } };
+      case "top-left":
+        return { fab: { top: 24, left: 24 }, panel: { top: 80, left: 24 } };
+      case "bottom-right":
+      default:
+        return { fab: { bottom: 24, right: 24 }, panel: { bottom: 80, right: 24 } };
+    }
+  })();
+
   return (
     <>
       <button
@@ -229,8 +267,6 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
         onClick={handleToggle}
         style={{
           position: "fixed",
-          bottom: 24,
-          right: 24,
           zIndex: 9999,
           width: 48,
           height: 48,
@@ -245,6 +281,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           justifyContent: "center",
           animation: "gv-fab-pulse 3s ease-in-out infinite",
           transition: "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          ...positionStyles.fab,
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = "scale(1.12)";
@@ -293,8 +330,6 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           ref={panelRef}
           style={{
             position: "fixed",
-            bottom: 80,
-            right: 24,
             zIndex: 9998,
             width: panelSize.width,
             height: panelSize.height,
@@ -323,6 +358,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               : "opacity 0.2s ease, transform 0.2s ease",
             display: "flex",
             flexDirection: "column",
+            ...positionStyles.panel,
           }}
         >
           <div
@@ -535,6 +571,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               onNodeClick={handleNodeClick}
               onNodeHoverChange={handleNodeHoverChange}
               colors={colors}
+              initialZoom={initialZoom}
             />
 
             {hoveredLabel && (

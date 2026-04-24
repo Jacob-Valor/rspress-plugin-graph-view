@@ -10,10 +10,21 @@ import {
 import type { GraphViewColors } from "./runtime/GraphView";
 import { normalizeRoutePath } from "./utils";
 
+export type PanelPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
+
 export interface RspressPluginGraphViewOptions {
   defaultOpen?: boolean;
   profileBuild?: boolean;
   colors?: GraphViewColors;
+  panelPosition?: PanelPosition;
+  panelSize?: {
+    minWidth?: number;
+    maxWidth?: number;
+    minHeight?: number;
+    maxHeight?: number;
+  };
+  initialZoom?: number;
+  keyboardShortcut?: string;
 }
 
 export function pluginGraphview(
@@ -52,6 +63,10 @@ export function pluginGraphview(
         {
           defaultOpen: options.defaultOpen ?? false,
           colors: options.colors,
+          panelPosition: options.panelPosition ?? "bottom-right",
+          panelSize: options.panelSize,
+          initialZoom: options.initialZoom ?? 1,
+          keyboardShortcut: options.keyboardShortcut ?? "g",
         },
       ],
     ],

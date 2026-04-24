@@ -50,6 +50,7 @@ interface GraphViewProps {
   onNodeClick?: (routePath: string) => void;
   onNodeHoverChange?: (label: string | null, x: number, y: number) => void;
   colors?: GraphViewColors;
+  initialZoom?: number;
 }
 
 function isDarkMode(): boolean {
@@ -149,7 +150,7 @@ export interface GraphViewHandle {
 }
 
 export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
-  { width, height, onNodeClick, onNodeHoverChange, colors: customColors },
+  { width, height, onNodeClick, onNodeHoverChange, colors: customColors, initialZoom = 1 },
   ref,
 ) {
   const { pathname } = useLocation();
@@ -164,7 +165,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
   const hoveredNodeRef = useRef<string | null>(null);
   const connectedSetRef = useRef<Set<string>>(new Set());
   const frameRef = useRef(0);
-  const forceRef = useRef<{ d3ReheatSimulation?: () => void } | null>(null);
+  const forceRef = useRef<{ d3ReheatSimulation?: () => void; zoom?: (k: number, duration: number) => void } | null>(null);
   const statsRef = useRef({ nodes: 0, links: 0 });
 
   useImperativeHandle(
@@ -504,7 +505,12 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
       fallback={<GraphFallback width={width} height={height} color={colors.label} />}
     >
       <ForceGraph
-        ref={forceRef}
+        ref={(el: NonNullable<typeof forceRef.current>) => {
+          forceRef.current = el;
+          if (el?.zoom && initialZoom !== 1) {
+            el.zoom(initialZoom, 0);
+          }
+        }}
         graphData={{ nodes: fgNodes, links: fgLinks }}
         width={width}
         height={height}

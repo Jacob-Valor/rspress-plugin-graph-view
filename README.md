@@ -65,6 +65,20 @@ pluginGraphview({
 
 You can also enable profiling temporarily with the `RSPRESS_GRAPH_VIEW_PROFILE=1` environment variable.
 
+### Optional sidebar component
+
+The plugin automatically mounts the floating `GraphPanel`. If you are building a custom Rspress theme and want an embedded sidebar graph instead, import the documented runtime component directly:
+
+```tsx
+import GraphSidebar from "rspress-plugin-graph-view/runtime/GraphSidebar";
+
+export function AsideAfter() {
+  return <GraphSidebar />;
+}
+```
+
+`GraphSidebar` uses the same generated graph data and accepts the same `colors` overrides as `GraphPanel`.
+
 ### Color customization
 
 Every visual token used by the canvas renderer can be overridden via the `colors` option:
@@ -75,16 +89,25 @@ Every visual token used by the canvas renderer can be overridden via the `colors
 | `currentNodeGlow` | Inner glow color (with opacity) |
 | `currentNodeGlowFade` | Transparent edge of the outer glow gradient |
 | `currentNodeRing` | Pulsing ring stroke color |
+| `currentNodePulseRing` | Animated pulse ring color; include `ALPHA` as the opacity placeholder |
+| `currentNodeGradLight` | Highlight color for the active node radial gradient |
 | `currentLabel` | Label color of the active page node |
 | `node` | Default node fill color |
 | `nodeHover` | Node fill on hover |
 | `nodeShadow` | Node drop shadow |
+| `nodeGradLight` | Highlight color for default node gradients |
+| `nodeGradHoverLight` | Highlight color for hovered node gradients |
 | `label` | Default label text color |
 | `labelHover` | Label text color on hover |
+| `labelShadow` | Label shadow/backplate color used for contrast |
 | `link` | Default link stroke color |
 | `linkHighlight` | Link stroke color when a connected node is hovered |
+| `fallbackLinkDim` | Dimmed link color when hovering unrelated nodes |
 | `particleColor` | Directional particle color on links |
 | `gridDot` | Background grid dot color |
+| `hoverRing` | Ring stroke color around hovered nodes |
+| `loaderBorder` | Loading spinner border color |
+| `loaderTop` | Loading spinner active segment color |
 
 ### Peer Dependencies
 
@@ -92,7 +115,7 @@ This plugin requires the following peer dependencies, which should already be in
 
 | Package | Version |
 | --- | --- |
-| `@rspress/core` | `^2.0.7` |
+| `@rspress/core` | `^2.0.9` |
 | `react` | `^19` |
 | `react-dom` | `^19` |
 | `react-force-graph-2d` | `^1.29.1` |

@@ -22,27 +22,11 @@ import {
   DARK_COLORS,
   mergeColors,
   FONT_STACK,
-  type CanvasColors,
+  type GraphViewColors,
 } from "./canvas/colors";
 
-export interface GraphViewColors {
-  currentNode?: string;
-  currentNodeGlow?: string;
-  currentNodeGlowFade?: string;
-  currentNodeRing?: string;
-  currentNodePulseRing?: string;
-  currentNodeGradLight?: string;
-  currentLabel?: string;
-  node?: string;
-  nodeHover?: string;
-  nodeShadow?: string;
-  label?: string;
-  labelHover?: string;
-  link?: string;
-  linkHighlight?: string;
-  particleColor?: string;
-  gridDot?: string;
-}
+export type { GraphViewColors } from "./canvas/colors";
+
 
 interface GraphViewProps {
   width: number;
@@ -50,6 +34,15 @@ interface GraphViewProps {
   onNodeClick?: (routePath: string) => void;
   onNodeHoverChange?: (label: string | null, x: number, y: number) => void;
   colors?: GraphViewColors;
+}
+
+interface ForceGraphHandleRef {
+  d3ReheatSimulation?: () => void;
+  zoom?: {
+    (): number;
+    (scale: number, durationMs?: number): void;
+  };
+  zoomToFit?: (durationMs?: number, padding?: number) => void;
 }
 
 function isDarkMode(): boolean {
@@ -164,34 +157,34 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
   const hoveredNodeRef = useRef<string | null>(null);
   const connectedSetRef = useRef<Set<string>>(new Set());
   const frameRef = useRef(0);
-  const forceRef = useRef<{ d3ReheatSimulation?: () => void } | null>(null);
+  const forceRef = useRef<ForceGraphHandleRef | null>(null);
   const statsRef = useRef({ nodes: 0, links: 0 });
 
   useImperativeHandle(
     ref,
     () => ({
       zoomIn: () => {
-        const fg = forceRef.current as any;
+        const fg = forceRef.current;
         if (fg?.zoom) {
           const current = fg.zoom();
           fg.zoom(current * 1.3, 300);
         }
       },
       zoomOut: () => {
-        const fg = forceRef.current as any;
+        const fg = forceRef.current;
         if (fg?.zoom) {
           const current = fg.zoom();
           fg.zoom(current / 1.3, 300);
         }
       },
       zoomReset: () => {
-        const fg = forceRef.current as any;
+        const fg = forceRef.current;
         if (fg?.zoom) {
           fg.zoom(1, 300);
         }
       },
       zoomToFit: () => {
-        const fg = forceRef.current as any;
+        const fg = forceRef.current;
         if (fg?.zoomToFit) {
           fg.zoomToFit(300, 16);
         }

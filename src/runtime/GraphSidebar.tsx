@@ -142,6 +142,13 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
     setIsExpanded((prev) => !prev);
   }, []);
 
+  const handleHeaderKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleExpanded();
+    }
+  }, [toggleExpanded]);
+
   const sidebarStyles: React.CSSProperties = {
     marginTop: 24,
     borderTop: "1px solid var(--rp-c-divider, #e2e8f0)",
@@ -232,7 +239,14 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
 
   return (
     <div style={sidebarStyles}>
-      <div style={headerStyles} onClick={toggleExpanded} role="button" tabIndex={0}>
+      <div
+        style={headerStyles}
+        onClick={toggleExpanded}
+        onKeyDown={handleHeaderKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+      >
         <div style={titleStyles}>
           <GraphIcon size={14} />
           <span>Graph View</span>

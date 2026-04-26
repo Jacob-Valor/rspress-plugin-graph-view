@@ -75,7 +75,7 @@ export default function CustomLayout(props) {
 }
 ```
 
-Available color keys: `currentNode`, `currentNodeGlow`, `currentNodeRing`, `currentLabel`, `node`, `nodeHover`, `nodeShadow`, `label`, `labelHover`, `link`, `linkHighlight`, `particleColor`, `gridDot`.
+Available color keys: `currentNode`, `currentNodeGlow`, `currentNodeGlowFade`, `currentNodeRing`, `currentNodePulseRing`, `currentNodeGradLight`, `currentLabel`, `node`, `nodeHover`, `nodeShadow`, `nodeGradLight`, `nodeGradHoverLight`, `label`, `labelHover`, `labelShadow`, `link`, `linkHighlight`, `fallbackLinkDim`, `particleColor`, `gridDot`, `hoverRing`, `loaderBorder`, `loaderTop`.
 
 Any unspecified key falls back to the default light or dark palette.
 
@@ -96,7 +96,7 @@ This means:
 
 | Package | Version | Required |
 |---------|---------|----------|
-| `@rspress/core` | `^2.0.7` | Yes |
+| `@rspress/core` | `^2.0.9` | Yes |
 | `react` | `^19` | Yes |
 | `react-dom` | `^19` | Yes |
 | `react-force-graph-2d` | `^1.29.1` | Yes |

@@ -8,6 +8,9 @@ interface GraphPanelProps {
 }
 
 const STYLE_ID = "graph-panel-keyframes";
+const PANEL_ID = "rspress-graph-view-panel";
+const PANEL_TITLE_ID = "rspress-graph-view-title";
+const GRAPH_REGION_ID = "rspress-graph-view-region";
 
 function injectKeyframes() {
   if (typeof document === "undefined") return;
@@ -120,6 +123,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
   const graphAreaRef = useRef<HTMLDivElement>(null);
   const graphViewRef = useRef<GraphViewHandle>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     injectKeyframes();
@@ -142,6 +146,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
       const timer = setTimeout(() => {
         const s = graphViewRef.current?.getStats();
         if (s) setStats(s);
+        closeButtonRef.current?.focus();
       }, 150);
       return () => clearTimeout(timer);
     } else {
@@ -158,6 +163,29 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
         fabRef.current?.focus();
         return;
       }
+
+      if (e.key === "Tab" && isOpen && panelRef.current) {
+        const focusableElements = panelRef.current.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+        );
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (firstElement && lastElement) {
+          if (e.shiftKey && document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+            return;
+          }
+
+          if (!e.shiftKey && document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+            return;
+          }
+        }
+      }
+
       const target = e.target as HTMLElement;
       const isEditable =
         target.tagName === "INPUT" ||
@@ -227,6 +255,8 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
         ref={fabRef}
         type="button"
         onClick={handleToggle}
+        aria-controls={PANEL_ID}
+        aria-expanded={isOpen}
         style={{
           position: "fixed",
           bottom: 24,
@@ -254,7 +284,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           e.currentTarget.style.transform = "scale(1)";
           e.currentTarget.style.animationPlayState = "running";
         }}
-        aria-label="Toggle graph view"
+        aria-label={isOpen ? "Close graph view" : "Open graph view"}
       >
         <svg
           width="20"
@@ -290,7 +320,12 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
 
       {panelVisible && (
         <div
+          id={PANEL_ID}
           ref={panelRef}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby={PANEL_TITLE_ID}
+          aria-describedby={GRAPH_REGION_ID}
           style={{
             position: "fixed",
             bottom: 80,
@@ -368,6 +403,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
             >
               <GraphIcon size={13} />
               <span
+                id={PANEL_TITLE_ID}
                 style={{
                   fontSize: 11,
                   fontWeight: 600,
@@ -479,6 +515,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               />
 
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={handleClose}
                 style={{
@@ -525,7 +562,14 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           </div>
 
           <div
+            id={GRAPH_REGION_ID}
             ref={graphAreaRef}
+            role="img"
+            aria-label={
+              stats
+                ? `Graph view showing ${stats.nodes} ${stats.nodes === 1 ? "node" : "nodes"} and ${stats.links} ${stats.links === 1 ? "link" : "links"}. Click graph nodes to navigate documentation pages.`
+                : "Interactive documentation graph loading."
+            }
             style={{ position: "relative", width: "100%", flex: 1, overflow: "hidden" }}
           >
             <GraphView
@@ -604,6 +648,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   <circle cx="12" cy="12" r="4" />
                 </svg>
                 <span
+                  aria-live="polite"
                   style={{
                     fontSize: 10,
                     fontFamily:

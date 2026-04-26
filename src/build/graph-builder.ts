@@ -89,9 +89,7 @@ function resolveLinkedRoute(
   routeByFile: Map<string, CollectedRoute>,
 ): CollectedRoute | undefined {
   if (rawLink.startsWith("/")) {
-    const normalized = normalizeRoutePath(
-      rawLink.replace(/\.(md|mdx)$/i, "").replace(/\/index$/i, ""),
-    );
+    const normalized = normalizeRoutePath(normalizeAbsoluteLinkTarget(rawLink));
 
     return routeByPath.get(normalized);
   }
@@ -123,6 +121,13 @@ function resolveLinkedRoute(
   }
 
   return undefined;
+}
+
+function normalizeAbsoluteLinkTarget(rawLink: string): string {
+  return rawLink
+    .replace(/\/+$/g, "")
+    .replace(/\.(md|mdx)$/i, "")
+    .replace(/\/index$/i, "") || "/";
 }
 
 function makeNodeLabel(route: CollectedRoute, inferredTitle?: string): string {

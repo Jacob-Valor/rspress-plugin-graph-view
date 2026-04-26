@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -86,6 +86,40 @@ describe("buildGraphModule", () => {
     expect(reorderedBuild.moduleSource).toBe(firstBuild.moduleSource);
     expect(reorderedBuild.diagnostics.reusedModule).toBe(true);
     expect(reorderedBuild.diagnostics.cacheHits).toBe(2);
+  });
+
+  test("resolves reference links and absolute index routes with trailing slash", async () => {
+    const directoryPath = await mkdtemp(join(tmpdir(), "graph-view-routes-"));
+    tempDirectories.push(directoryPath);
+
+    const indexPath = join(directoryPath, "index.md");
+    const guideDirectory = join(directoryPath, "guide");
+    const guidePath = join(guideDirectory, "index.md");
+    await mkdir(guideDirectory);
+    await Bun.write(indexPath, "# Home\n\n[Guide][guide]\n\n[guide]: /guide/index/\n");
+    await Bun.write(guidePath, "# Guide\n\n[Home](/index.md)\n");
+
+    const routes: CollectedRoute[] = [
+      {
+        routePath: "/",
+        absolutePath: indexPath,
+        relativePath: "index.md",
+        pageName: "index",
+      },
+      {
+        routePath: "/guide",
+        absolutePath: guidePath,
+        relativePath: "guide/index.md",
+        pageName: "guide/index",
+      },
+    ];
+
+    const result = await buildGraphModule(routes, createGraphBuildCache());
+
+    expect(result.graphData.links).toEqual([
+      { source: "/", target: "/guide" },
+      { source: "/guide", target: "/" },
+    ]);
   });
 });
 

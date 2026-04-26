@@ -12,6 +12,27 @@ describe("extractMarkdownLinks", () => {
     expect(extractMarkdownLinks(source)).toEqual(["/docs/intro"]);
   });
 
+  test("extracts full reference markdown links", () => {
+    const source = "Read [the guide][guide-ref].\n\n[guide-ref]: ./guide.md";
+    expect(extractMarkdownLinks(source)).toEqual(["./guide.md"]);
+  });
+
+  test("extracts collapsed and shortcut reference markdown links", () => {
+    const source = [
+      "Read [Guide][] and [API].",
+      "",
+      "[guide]: ./guide.md#intro",
+      "[api]: ../api.mdx?from=docs",
+    ].join("\n");
+
+    expect(extractMarkdownLinks(source)).toEqual(["./guide.md", "../api.mdx"]);
+  });
+
+  test("ignores external reference markdown links", () => {
+    const source = "Visit [site][site].\n\n[site]: https://example.com";
+    expect(extractMarkdownLinks(source)).toEqual([]);
+  });
+
   test("strips hash fragments from links", () => {
     const source = "See [section](./page.md#heading).";
     expect(extractMarkdownLinks(source)).toEqual(["./page.md"]);

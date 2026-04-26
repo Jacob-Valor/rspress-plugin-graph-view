@@ -1,5 +1,3 @@
-import type { GraphViewColors } from "../GraphView";
-
 export const FONT_STACK =
   "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
@@ -28,6 +26,8 @@ export interface CanvasColors {
   loaderBorder: string;
   loaderTop: string;
 }
+
+export type GraphViewColors = Partial<CanvasColors>;
 
 export const LIGHT_COLORS: CanvasColors = {
   currentNode: "#6366f1",

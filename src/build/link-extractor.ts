@@ -3,10 +3,29 @@ import { visit } from "unist-util-visit";
 
 export function extractMarkdownLinks(source: string): string[] {
   const tree = fromMarkdown(source);
+  const definitions = new Map<string, string>();
   const links: string[] = [];
+
+  visit(tree, "definition", (node) => {
+    if (node.identifier) {
+      definitions.set(normalizeReferenceIdentifier(node.identifier), node.url);
+    }
+  });
 
   visit(tree, "link", (node) => {
     const target = cleanLinkTarget(node.url);
+    if (isInternalDocLink(target)) {
+      links.push(target);
+    }
+  });
+
+  visit(tree, "linkReference", (node) => {
+    const rawTarget = definitions.get(normalizeReferenceIdentifier(node.identifier));
+    if (!rawTarget) {
+      return;
+    }
+
+    const target = cleanLinkTarget(rawTarget);
     if (isInternalDocLink(target)) {
       links.push(target);
     }
@@ -51,6 +70,10 @@ function cleanLinkTarget(rawLink: string): string {
   }
 
   return cleaned;
+}
+
+function normalizeReferenceIdentifier(identifier: string): string {
+  return identifier.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 function isInternalDocLink(link: string): boolean {

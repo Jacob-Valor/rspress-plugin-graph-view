@@ -37,6 +37,16 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./runtime/GraphPanel": {
+      "types": "./src/runtime/GraphPanel.tsx",
+      "import": "./src/runtime/GraphPanel.tsx",
+      "default": "./src/runtime/GraphPanel.tsx"
+    },
+    "./runtime/GraphSidebar": {
+      "types": "./src/runtime/GraphSidebar.tsx",
+      "import": "./src/runtime/GraphSidebar.tsx",
+      "default": "./src/runtime/GraphSidebar.tsx"
+    },
     "./runtime/*": {
       "types": "./src/runtime/*",
       "import": "./src/runtime/*",
@@ -63,7 +73,7 @@
     "provenance": true
   },
   "peerDependencies": {
-    "@rspress/core": "2.0.7",
+    "@rspress/core": "2.0.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-force-graph-2d": "1.29.1",

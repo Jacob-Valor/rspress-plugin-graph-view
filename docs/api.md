@@ -26,6 +26,24 @@ interface RspressPluginGraphViewOptions {
 
 `profileBuild` can also be enabled temporarily with the `RSPRESS_GRAPH_VIEW_PROFILE=1` environment variable.
 
+## Runtime Components
+
+### `GraphPanel`
+
+```tsx
+import GraphPanel from 'rspress-plugin-graph-view/runtime/GraphPanel';
+```
+
+Floating graph panel used by the plugin's automatic `globalUIComponents` integration.
+
+### `GraphSidebar`
+
+```tsx
+import GraphSidebar from 'rspress-plugin-graph-view/runtime/GraphSidebar';
+```
+
+Optional embedded graph component for custom themes or layout slots. It reads the same generated graph data as the floating panel and supports the same `colors` overrides.
+
 ## Related
 
 - [Getting Started](./guide/getting-started.md)

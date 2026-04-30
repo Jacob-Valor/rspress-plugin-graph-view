@@ -44,6 +44,9 @@ jobs:
       - name: Typecheck
         run: bun run build
 
+      - name: Audit production dependencies
+        run: bun audit --production
+
       - name: Test
         run: bun test
 

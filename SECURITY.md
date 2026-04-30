@@ -33,6 +33,7 @@ This policy covers the `rspress-plugin-graph-view` npm package and its source co
 - GitHub Actions are pinned to full commit SHAs to prevent dependency substitution attacks
 - Dependabot is configured to automatically open PRs for dependency updates (both npm and GitHub Actions)
 - CI enforces `--frozen-lockfile` installs to prevent lockfile drift
+- CI runs `bun audit --production` before tests and release publishing
 
 ## Accepted Upstream Toolchain Risks
 
@@ -43,7 +44,7 @@ The project may inherit security scanner alerts from upstream build tooling that
 - Status: accepted upstream toolchain risk
 - Reviewed: 2026-04-23
 - Current transitive path: `@rspress/core` → `@rsbuild/core` → `@rspack/core` → `@rspack/binding-wasm32-wasi` → `@napi-rs/wasm-runtime` → `@emnapi/core`
-- Current lockfile version in this repository: `@emnapi/core@1.9.1`
+- Current lockfile version in this repository: `@emnapi/core@1.10.0`
 
 Rationale:
 
@@ -63,7 +64,7 @@ Mitigation policy:
 - Status: accepted upstream toolchain risk
 - Reviewed: 2026-04-23
 - Current transitive path: `@rspress/core` → `@rsbuild/core` → `@rspack/core` → `@rspack/binding-wasm32-wasi` → `@napi-rs/wasm-runtime` → `@emnapi/core`
-- Current lockfile version in this repository: `@emnapi/core@1.9.1`
+- Current lockfile version in this repository: `@emnapi/core@1.10.0`
 
 Rationale:
 
@@ -116,22 +117,3 @@ Mitigation policy:
 - Keep `@rspress/core` and its MDX toolchain updated through normal dependency maintenance.
 - Re-evaluate this accepted risk if upstream `@mdx-js/mdx` removes or materially changes the documented URL-string behavior.
 - Treat any new URL usage beyond static documentation references as a fresh incident and re-investigate immediately.
-
-### Accepted risk: `argparse` `unmaintained`
-
-- Status: accepted upstream toolchain risk
-- Reviewed: 2026-04-23
-- Current transitive path: `@rspress/core` → `@rspress/shared` → `gray-matter@4.0.3` → `js-yaml@3.14.2` → `argparse@1.0.10`
-
-Rationale:
-
-- Socket flags `argparse@1.0.10` as unmaintained because the 1.x line is old and no longer actively updated.
-- In this repository it is a transitive dependency introduced by the upstream `gray-matter` → `js-yaml@3` chain used by `@rspress/shared`.
-- Forcing `js-yaml@4` locally is risky because `gray-matter@4.0.3` still targets the older js-yaml API and may break if overridden aggressively.
-- `argparse@1.0.10` appears stale but benign: it is not a direct dependency of this project and there is no safer low-risk local removal path without changing upstream framework internals.
-
-Mitigation policy:
-
-- Keep `@rspress/core` and related shared tooling updated through normal dependency maintenance.
-- Re-evaluate this accepted risk if upstream `gray-matter`, `@rspress/shared`, or `js-yaml` dependency chains remove `argparse@1.x`.
-- Treat any newly disclosed security vulnerability in `argparse@1.x` or its immediate dependency path as a fresh incident and re-investigate immediately.

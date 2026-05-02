@@ -81,10 +81,10 @@
     "node": ">=20.0.0"
   },
   "peerDependencies": {
-    "@rspress/core": "^2.0.9",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-force-graph-2d": "^1.29.0",
+    "@rspress/core": "2.0.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-force-graph-2d": "1.29.1",
     "typescript": ">=5.0"
   },
   "peerDependenciesMeta": {

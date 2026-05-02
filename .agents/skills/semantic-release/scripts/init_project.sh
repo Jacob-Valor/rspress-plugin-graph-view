@@ -159,23 +159,38 @@ fi
 
 # Install semantic-release
 echo "Installing semantic-release v25+..."
+echo ""
+echo "Run the install command for your package manager:"
+echo ""
 case $MODE in
     user|org)
         echo "  Mode: Shareable config ($CONFIG_PACKAGE)"
-        npm install --save-dev semantic-release@25.0.3 "$CONFIG_PACKAGE"
+        echo ""
+        echo "  npm install --save-dev semantic-release@25.0.3 $CONFIG_PACKAGE"
+        echo "  # or"
+        echo "  bun add -d semantic-release@25.0.3 $CONFIG_PACKAGE"
         ;;
     inline)
         echo "  Mode: Inline configuration"
-        npm install --save-dev \
-            semantic-release@25.0.3 \
-            @semantic-release/changelog@6.0.3 \
-            @semantic-release/commit-analyzer@13.0.1 \
-            @semantic-release/exec@7.1.0 \
-            @semantic-release/git@10.0.1 \
-            @semantic-release/github@12.0.6 \
-            @semantic-release/release-notes-generator@14.1.0
+        echo ""
+        echo "  npm install --save-dev semantic-release@25.0.3 \\"
+        echo "      @semantic-release/changelog@6.0.3 \\"
+        echo "      @semantic-release/commit-analyzer@13.0.1 \\"
+        echo "      @semantic-release/exec@7.1.0 \\"
+        echo "      @semantic-release/git@10.0.1 \\"
+        echo "      @semantic-release/github@12.0.6 \\"
+        echo "      @semantic-release/release-notes-generator@14.1.0"
+        echo "  # or"
+        echo "  bun add -d semantic-release@25.0.3 \\"
+        echo "      @semantic-release/changelog@6.0.3 \\"
+        echo "      @semantic-release/commit-analyzer@13.0.1 \\"
+        echo "      @semantic-release/exec@7.1.0 \\"
+        echo "      @semantic-release/git@10.0.1 \\"
+        echo "      @semantic-release/github@12.0.6 \\"
+        echo "      @semantic-release/release-notes-generator@14.1.0"
         ;;
 esac
+echo ""
 
 # Configure package.json
 echo "Configuring package.json..."

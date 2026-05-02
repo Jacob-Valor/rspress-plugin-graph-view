@@ -97,8 +97,8 @@ if [[ "$(uname)" == "Darwin" ]]; then
         echo "⚠️  semantic-release not installed globally"
         echo "   macOS Gatekeeper blocks npx .node files. Install globally:"
         echo ""
-        echo "   npm install -g semantic-release @semantic-release/changelog \\"
-        echo "     @semantic-release/git @semantic-release/github @semantic-release/exec"
+        echo "   npm install -g semantic-release@25.0.3 @semantic-release/changelog@6.0.3 \\"
+        echo "     @semantic-release/git@10.0.1 @semantic-release/github@12.0.6 @semantic-release/exec@7.1.0"
         echo ""
         echo "   Then clear quarantine (one-time after install or node upgrade):"
         echo "   xattr -r -d com.apple.quarantine ~/.local/share/mise/installs/node/"
@@ -162,18 +162,18 @@ echo "Installing semantic-release v25+..."
 case $MODE in
     user|org)
         echo "  Mode: Shareable config ($CONFIG_PACKAGE)"
-        npm install --save-dev semantic-release@^25.0.0 "$CONFIG_PACKAGE"
+        npm install --save-dev semantic-release@25.0.3 "$CONFIG_PACKAGE"
         ;;
     inline)
         echo "  Mode: Inline configuration"
         npm install --save-dev \
-            semantic-release@^25.0.0 \
-            @semantic-release/changelog@^6.0.3 \
-            @semantic-release/commit-analyzer@^13.0.0 \
-            @semantic-release/exec@^6.0.3 \
-            @semantic-release/git@^10.0.1 \
-            @semantic-release/github@^11.0.1 \
-            @semantic-release/release-notes-generator@^14.0.1
+            semantic-release@25.0.3 \
+            @semantic-release/changelog@6.0.3 \
+            @semantic-release/commit-analyzer@13.0.1 \
+            @semantic-release/exec@7.1.0 \
+            @semantic-release/git@10.0.1 \
+            @semantic-release/github@12.0.6 \
+            @semantic-release/release-notes-generator@14.1.0
         ;;
 esac
 

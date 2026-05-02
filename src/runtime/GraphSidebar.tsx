@@ -1,36 +1,17 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useLocation } from "@rspress/core/runtime";
-import GraphView, { type GraphViewHandle, type GraphViewColors } from "./GraphView";
+import { useLocation, useNavigate } from "@rspress/core/runtime";
+import { useCallback, useEffect, useRef, useState } from "react";
+import GraphIcon from "./components/GraphIcon";
+import ZoomButton from "./components/ZoomButton";
+import GraphView, { type GraphViewColors, type GraphViewHandle } from "./GraphView";
 
 interface GraphSidebarProps {
   colors?: GraphViewColors;
 }
 
-function GraphIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="5" cy="6" r="2.5" />
-      <circle cx="19" cy="6" r="2.5" />
-      <circle cx="12" cy="18" r="2.5" />
-      <line x1="7.5" y1="6" x2="16.5" y2="6" />
-      <line x1="6.5" y1="8" x2="10.5" y2="16" />
-      <line x1="17.5" y1="8" x2="13.5" y2="16" />
-    </svg>
-  );
-}
-
 function ChevronIcon({ expanded, size = 14 }: { expanded: boolean; size?: number }) {
   return (
     <svg
+      aria-hidden="true"
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -49,48 +30,6 @@ function ChevronIcon({ expanded, size = 14 }: { expanded: boolean; size?: number
   );
 }
 
-interface ZoomButtonProps {
-  children: React.ReactNode;
-  ariaLabel: string;
-  onClick: () => void;
-}
-
-function ZoomButton({ children, ariaLabel, onClick }: ZoomButtonProps) {
-  return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      onClick={onClick}
-      style={{
-        width: 22,
-        height: 22,
-        borderRadius: 4,
-        border: "none",
-        background: "transparent",
-        color: "var(--rp-c-text-2, #64748b)",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 0,
-        transition: "background 0.12s, color 0.12s",
-        flexShrink: 0,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background =
-          "color-mix(in srgb, var(--rp-c-brand, #6366f1) 12%, transparent)";
-        e.currentTarget.style.color = "var(--rp-c-brand, #6366f1)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.color = "var(--rp-c-text-2, #64748b)";
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
 export default function GraphSidebar({ colors }: GraphSidebarProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -102,6 +41,7 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
 
   const [dimensions, setDimensions] = useState({ width: 268, height: 200 });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isExpanded triggers dimension recalculation
   useEffect(() => {
     const updateDimensions = () => {
       const container = containerRef.current;
@@ -117,6 +57,7 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
     return () => window.removeEventListener("resize", updateDimensions);
   }, [isExpanded]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname triggers stats refresh on route change
   useEffect(() => {
     const s = graphViewRef.current?.getStats();
     if (s) setStats(s);
@@ -129,25 +70,15 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
     [navigate],
   );
 
-  const handleNodeHoverChange = useCallback(
-    (label: string | null, _x: number, _y: number) => {
-      setHoveredLabel(label);
-      const s = graphViewRef.current?.getStats();
-      if (s) setStats(s);
-    },
-    [],
-  );
+  const handleNodeHoverChange = useCallback((label: string | null, _x: number, _y: number) => {
+    setHoveredLabel(label);
+    const s = graphViewRef.current?.getStats();
+    if (s) setStats(s);
+  }, []);
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
-
-  const handleHeaderKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      toggleExpanded();
-    }
-  }, [toggleExpanded]);
 
   const sidebarStyles: React.CSSProperties = {
     marginTop: 24,
@@ -160,9 +91,6 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: isExpanded ? 12 : 0,
-    cursor: "pointer",
-    userSelect: "none",
-    WebkitUserSelect: "none",
   };
 
   const titleStyles: React.CSSProperties = {
@@ -172,8 +100,7 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
     fontSize: 14,
     fontWeight: 600,
     color: "var(--rp-c-text-1, #334155)",
-    fontFamily:
-      "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   };
 
   const contentStyles: React.CSSProperties = {
@@ -185,8 +112,7 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
 
   const graphContainerStyles: React.CSSProperties = {
     position: "relative",
-    background:
-      "color-mix(in srgb, var(--rp-c-bg-soft, #f8fafc) 80%, transparent)",
+    background: "color-mix(in srgb, var(--rp-c-bg-soft, #f8fafc) 80%, transparent)",
     borderRadius: 8,
     padding: 8,
     border: "1px solid var(--rp-c-divider, #e2e8f0)",
@@ -199,16 +125,14 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
     right: 8,
     pointerEvents: "none",
     zIndex: 20,
-    background:
-      "color-mix(in srgb, var(--rp-c-bg, #ffffff) 95%, transparent)",
+    background: "color-mix(in srgb, var(--rp-c-bg, #ffffff) 95%, transparent)",
     backdropFilter: "blur(8px)",
     border: "1px solid var(--rp-c-divider, #e2e8f0)",
     borderRadius: 6,
     padding: "4px 10px",
     fontSize: 11,
     fontWeight: 500,
-    fontFamily:
-      "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     color: "var(--rp-c-text-1, #334155)",
     whiteSpace: "nowrap",
     overflow: "hidden",
@@ -224,8 +148,7 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
     justifyContent: "space-between",
     marginTop: 8,
     padding: "4px 8px",
-    background:
-      "color-mix(in srgb, var(--rp-c-bg-soft, #f8fafc) 60%, transparent)",
+    background: "color-mix(in srgb, var(--rp-c-bg-soft, #f8fafc) 60%, transparent)",
     borderRadius: 6,
     border: "1px solid var(--rp-c-divider, #e2e8f0)",
   };
@@ -233,18 +156,21 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
   const statsStyles: React.CSSProperties = {
     fontSize: 11,
     color: "var(--rp-c-text-2, #64748b)",
-    fontFamily:
-      "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   };
 
   return (
     <div style={sidebarStyles}>
-      <div
-        style={headerStyles}
+      <button
+        type="button"
+        style={{
+          ...headerStyles,
+          background: "transparent",
+          border: "none",
+          width: "100%",
+          fontFamily: "inherit",
+        }}
         onClick={toggleExpanded}
-        onKeyDown={handleHeaderKeyDown}
-        role="button"
-        tabIndex={0}
         aria-expanded={isExpanded}
       >
         <div style={titleStyles}>
@@ -252,7 +178,7 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
           <span>Graph View</span>
         </div>
         <ChevronIcon expanded={isExpanded} size={14} />
-      </div>
+      </button>
 
       <div style={contentStyles}>
         <div ref={containerRef} style={graphContainerStyles}>
@@ -273,19 +199,19 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
               display: "flex",
               alignItems: "center",
               gap: 2,
-              background:
-                "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 35%, transparent)",
+              background: "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 35%, transparent)",
               borderRadius: 5,
               padding: "1px 2px",
-              border:
-                "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 50%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 50%, transparent)",
             }}
           >
             <ZoomButton
               ariaLabel="Zoom in"
               onClick={() => graphViewRef.current?.zoomIn()}
+              size="sm"
             >
               <svg
+                aria-hidden="true"
                 width="10"
                 height="10"
                 viewBox="0 0 24 24"
@@ -301,8 +227,10 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
             <ZoomButton
               ariaLabel="Zoom out"
               onClick={() => graphViewRef.current?.zoomOut()}
+              size="sm"
             >
               <svg
+                aria-hidden="true"
                 width="10"
                 height="10"
                 viewBox="0 0 24 24"
@@ -317,8 +245,10 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
             <ZoomButton
               ariaLabel="Fit to view"
               onClick={() => graphViewRef.current?.zoomToFit()}
+              size="sm"
             >
               <svg
+                aria-hidden="true"
                 width="10"
                 height="10"
                 viewBox="0 0 24 24"
@@ -337,8 +267,10 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
             <ZoomButton
               ariaLabel="Reset zoom"
               onClick={() => graphViewRef.current?.zoomReset()}
+              size="sm"
             >
               <svg
+                aria-hidden="true"
                 width="10"
                 height="10"
                 viewBox="0 0 24 24"

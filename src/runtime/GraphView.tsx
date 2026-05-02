@@ -1,32 +1,27 @@
+import { useLocation } from "@rspress/core/runtime";
 import {
-  useMemo,
-  useCallback,
-  useEffect,
-  useState,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
   Component,
   type ElementType,
+  forwardRef,
   type ReactNode,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
 } from "react";
-import { useLocation } from "@rspress/core/runtime";
 import { graphData } from "virtual-graph-data";
 import {
-  createGraphIndex,
-  deriveGraphViewData,
-  type ForceGraphNode,
-} from "./deriveGraphViewData";
-import {
-  LIGHT_COLORS,
   DARK_COLORS,
-  mergeColors,
   FONT_STACK,
   type GraphViewColors,
+  LIGHT_COLORS,
+  mergeColors,
 } from "./canvas/colors";
+import { createGraphIndex, deriveGraphViewData, type ForceGraphNode } from "./deriveGraphViewData";
 
 export type { GraphViewColors } from "./canvas/colors";
-
 
 interface GraphViewProps {
   width: number;
@@ -90,15 +85,7 @@ class GraphErrorBoundary extends Component<
   }
 }
 
-function GraphFallback({
-  width,
-  height,
-  color,
-}: {
-  width: number;
-  height: number;
-  color: string;
-}) {
+function GraphFallback({ width, height, color }: { width: number; height: number; color: string }) {
   return (
     <div
       style={{
@@ -115,6 +102,7 @@ function GraphFallback({
       }}
     >
       <svg
+        aria-hidden="true"
         width="24"
         height="24"
         viewBox="0 0 24 24"
@@ -148,15 +136,12 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
   const { pathname } = useLocation();
   const dark = useTheme();
   const baseColors = dark ? DARK_COLORS : LIGHT_COLORS;
-  const colors = useMemo(
-    () => mergeColors(baseColors, customColors),
-    [baseColors, customColors],
-  );
+  const colors = useMemo(() => mergeColors(baseColors, customColors), [baseColors, customColors]);
   const [ForceGraph, setForceGraph] = useState<ElementType | null>(null);
   const [forceGraphError, setForceGraphError] = useState(false);
   const hoveredNodeRef = useRef<string | null>(null);
   const connectedSetRef = useRef<Set<string>>(new Set());
-  const frameRef = useRef(0);
+  const pulseStartRef = useRef<number>(Date.now());
   const forceRef = useRef<ForceGraphHandleRef | null>(null);
   const statsRef = useRef({ nodes: 0, links: 0 });
 
@@ -208,16 +193,6 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     };
   }, []);
 
-  useEffect(() => {
-    let raf: number;
-    const tick = () => {
-      frameRef.current++;
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
   const currentRoutePath = useMemo(() => {
     return pathname.replace(/\/$/, "") || "/";
   }, [pathname]);
@@ -238,13 +213,9 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
       const connected = new Set<string>();
       for (const link of fgLinks) {
         const src =
-          typeof link.source === "object"
-            ? (link.source as ForceGraphNode).id
-            : link.source;
+          typeof link.source === "object" ? (link.source as ForceGraphNode).id : link.source;
         const tgt =
-          typeof link.target === "object"
-            ? (link.target as ForceGraphNode).id
-            : link.target;
+          typeof link.target === "object" ? (link.target as ForceGraphNode).id : link.target;
         if (src === nodeId) connected.add(tgt as string);
         if (tgt === nodeId) connected.add(src as string);
       }
@@ -292,8 +263,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
 
       ctx.fillStyle = colors.gridDot;
       const startX = Math.floor(-width / (2 * globalScale) / spacing) * spacing;
-      const startY =
-        Math.floor(-height / (2 * globalScale) / spacing) * spacing;
+      const startY = Math.floor(-height / (2 * globalScale) / spacing) * spacing;
       const endX = -startX + spacing;
       const endY = -startY + spacing;
 
@@ -329,18 +299,11 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
       const dimmed = hasHover && !isConnectedToHover && !node.isCurrent;
 
       if (node.isCurrent) {
-        const pulsePhase = (frameRef.current % 180) / 180;
+        const pulsePhase = ((Date.now() - pulseStartRef.current) % 3000) / 3000;
         const pulseRadius = radius + 6 + Math.sin(pulsePhase * Math.PI * 2) * 3;
         const pulseAlpha = 0.15 + Math.sin(pulsePhase * Math.PI * 2) * 0.08;
 
-        const outerGlow = ctx.createRadialGradient(
-          nx,
-          ny,
-          radius,
-          nx,
-          ny,
-          radius + 14,
-        );
+        const outerGlow = ctx.createRadialGradient(nx, ny, radius, nx, ny, radius + 14);
         outerGlow.addColorStop(0, colors.currentNodeGlow);
         outerGlow.addColorStop(1, colors.currentNodeGlowFade);
         ctx.beginPath();
@@ -401,8 +364,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         ctx.stroke();
       }
 
-      const shouldDrawLabel =
-        !isLargeGraph || node.isCurrent || isHovered || globalScale >= 1.4;
+      const shouldDrawLabel = !isLargeGraph || node.isCurrent || isHovered || globalScale >= 1.4;
       if (shouldDrawLabel && label) {
         const fontW = node.isCurrent || isHovered ? 600 : 400;
         ctx.font = `${fontW} ${fontSize}px ${FONT_STACK}`;
@@ -431,15 +393,10 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     (link: { source?: unknown; target?: unknown }) => {
       if (!hoveredNodeRef.current) return colors.link;
       const src =
-        typeof link.source === "object"
-          ? (link.source as ForceGraphNode).id
-          : link.source;
+        typeof link.source === "object" ? (link.source as ForceGraphNode).id : link.source;
       const tgt =
-        typeof link.target === "object"
-          ? (link.target as ForceGraphNode).id
-          : link.target;
-      const isConnected =
-        src === hoveredNodeRef.current || tgt === hoveredNodeRef.current;
+        typeof link.target === "object" ? (link.target as ForceGraphNode).id : link.target;
+      const isConnected = src === hoveredNodeRef.current || tgt === hoveredNodeRef.current;
       return isConnected ? colors.linkHighlight : colors.fallbackLinkDim;
     },
     [colors.link, colors.linkHighlight, colors.fallbackLinkDim],
@@ -449,15 +406,10 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     (link: { source?: unknown; target?: unknown }) => {
       if (!hoveredNodeRef.current) return isLargeGraph ? 0.75 : 1;
       const src =
-        typeof link.source === "object"
-          ? (link.source as ForceGraphNode).id
-          : link.source;
+        typeof link.source === "object" ? (link.source as ForceGraphNode).id : link.source;
       const tgt =
-        typeof link.target === "object"
-          ? (link.target as ForceGraphNode).id
-          : link.target;
-      const isConnected =
-        src === hoveredNodeRef.current || tgt === hoveredNodeRef.current;
+        typeof link.target === "object" ? (link.target as ForceGraphNode).id : link.target;
+      const isConnected = src === hoveredNodeRef.current || tgt === hoveredNodeRef.current;
       return isConnected ? 1.8 : isLargeGraph ? 0.5 : 0.6;
     },
     [isLargeGraph],
@@ -511,9 +463,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         linkDirectionalParticles={isLargeGraph ? 0 : 2}
         linkDirectionalParticleWidth={isLargeGraph ? 0 : 2}
         linkDirectionalParticleColor={() => colors.particleColor}
-        onNodeClick={
-          handleNodeClick as (node: unknown, event: MouseEvent) => void
-        }
+        onNodeClick={handleNodeClick as (node: unknown, event: MouseEvent) => void}
         onRenderFramePre={drawBackground}
         backgroundColor="transparent"
         d3AlphaDecay={isLargeGraph ? 0.06 : 0.02}

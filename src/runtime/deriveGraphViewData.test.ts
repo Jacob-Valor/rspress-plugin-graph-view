@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import type { GraphData } from "../types";
 import {
   createGraphIndex,
   deriveGraphViewData,
   LARGE_GRAPH_LINK_THRESHOLD,
   LARGE_GRAPH_NODE_THRESHOLD,
 } from "./deriveGraphViewData";
-import type { GraphData } from "../types";
 
 describe("deriveGraphViewData", () => {
   test("returns the current node neighborhood without re-scanning the entire graph", () => {

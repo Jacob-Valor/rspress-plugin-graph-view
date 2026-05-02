@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   buildGraphModule,
-  createGraphBuildCache,
   type CollectedRoute,
+  createGraphBuildCache,
   type GraphBuildDiagnostics,
 } from "../src/build";
 
@@ -41,10 +41,7 @@ interface BenchmarkSummary {
 
 interface BenchmarkReport {
   generatedAt: string;
-  options: Pick<
-    BenchmarkOptions,
-    "pages" | "linksPerPage" | "iterations" | "shape"
-  >;
+  options: Pick<BenchmarkOptions, "pages" | "linksPerPage" | "iterations" | "shape">;
   summaries: BenchmarkSummary[];
   improvements: {
     warmCacheVsCold: number;
@@ -74,11 +71,7 @@ async function main(): Promise<void> {
     );
 
     const coldSummary = summarizeDiagnostics("cold", options.shape, coldRuns);
-    const warmSummary = summarizeDiagnostics(
-      "warm-cache",
-      options.shape,
-      warmRuns,
-    );
+    const warmSummary = summarizeDiagnostics("warm-cache", options.shape, warmRuns);
     const incrementalSummary = summarizeDiagnostics(
       "single-file-change",
       options.shape,
@@ -159,21 +152,14 @@ function parseArgs(argv: string[]): BenchmarkOptions {
 }
 
 function isGraphShape(value: string): value is GraphShape {
-  return (
-    value === "sequential" ||
-    value === "ring" ||
-    value === "hub" ||
-    value === "clustered"
-  );
+  return value === "sequential" || value === "ring" || value === "hub" || value === "clustered";
 }
 
 function clampInteger(value: number, minimum: number): number {
   return Math.max(minimum, Math.floor(value));
 }
 
-async function createSyntheticDocs(
-  options: BenchmarkOptions,
-): Promise<SyntheticDocsFixture> {
+async function createSyntheticDocs(options: BenchmarkOptions): Promise<SyntheticDocsFixture> {
   const rootDir = await mkdtemp(join(tmpdir(), "graph-view-bench-"));
   const routes: CollectedRoute[] = [];
 
@@ -213,16 +199,12 @@ function createSyntheticMarkdown(
   shape: GraphShape,
   revision: number,
 ): string {
-  const links = buildSyntheticLinkTargets(
-    pageIndex,
-    pageCount,
-    linksPerPage,
-    shape,
-  ).map((targetIndex) => {
-    const targetFile =
-      targetIndex === 0 ? "./index.md" : `./page-${targetIndex}.md`;
-    return `- [Page ${targetIndex}](${targetFile})`;
-  });
+  const links = buildSyntheticLinkTargets(pageIndex, pageCount, linksPerPage, shape).map(
+    (targetIndex) => {
+      const targetFile = targetIndex === 0 ? "./index.md" : `./page-${targetIndex}.md`;
+      return `- [Page ${targetIndex}](${targetFile})`;
+    },
+  );
 
   return [
     `# Page ${pageIndex}`,
@@ -247,7 +229,6 @@ function buildSyntheticLinkTargets(
       return buildHubTargets(pageIndex, pageCount, linksPerPage);
     case "clustered":
       return buildClusteredTargets(pageIndex, pageCount, linksPerPage);
-    case "ring":
     default:
       return buildRingTargets(pageIndex, pageCount, linksPerPage);
   }
@@ -258,17 +239,10 @@ function buildSequentialTargets(
   pageCount: number,
   linksPerPage: number,
 ): number[] {
-  return Array.from(
-    { length: linksPerPage },
-    (_, offset) => (pageIndex + offset + 1) % pageCount,
-  );
+  return Array.from({ length: linksPerPage }, (_, offset) => (pageIndex + offset + 1) % pageCount);
 }
 
-function buildRingTargets(
-  pageIndex: number,
-  pageCount: number,
-  linksPerPage: number,
-): number[] {
+function buildRingTargets(pageIndex: number, pageCount: number, linksPerPage: number): number[] {
   const targets = new Set<number>();
   let distance = 1;
 
@@ -284,11 +258,7 @@ function buildRingTargets(
   }
 
   if (targets.size < linksPerPage) {
-    for (const target of buildSequentialTargets(
-      pageIndex,
-      pageCount,
-      linksPerPage,
-    )) {
+    for (const target of buildSequentialTargets(pageIndex, pageCount, linksPerPage)) {
       targets.add(target);
       if (targets.size >= linksPerPage) {
         break;
@@ -299,11 +269,7 @@ function buildRingTargets(
   return [...targets].slice(0, linksPerPage);
 }
 
-function buildHubTargets(
-  pageIndex: number,
-  pageCount: number,
-  linksPerPage: number,
-): number[] {
+function buildHubTargets(pageIndex: number, pageCount: number, linksPerPage: number): number[] {
   const targets = new Set<number>();
   const hubIndex = 0;
 
@@ -338,8 +304,7 @@ function buildClusteredTargets(
   let offset = 1;
   while (targets.size < Math.max(1, linksPerPage - 1)) {
     const candidate =
-      clusterStart +
-      ((pageIndex - clusterStart + offset) % (clusterEnd - clusterStart));
+      clusterStart + ((pageIndex - clusterStart + offset) % (clusterEnd - clusterStart));
     if (candidate !== pageIndex) {
       targets.add(candidate);
     }
@@ -415,13 +380,7 @@ async function runIncrementalBuilds(
     await sleep(20);
     await Bun.write(
       targetRoute.absolutePath,
-      createSyntheticMarkdown(
-        targetPageIndex,
-        routes.length,
-        linksPerPage,
-        shape,
-        iteration + 1,
-      ),
+      createSyntheticMarkdown(targetPageIndex, routes.length, linksPerPage, shape, iteration + 1),
     );
     const result = await buildGraphModule(routes, cache, benchmarkBuildOptions);
     diagnostics.push(result.diagnostics);
@@ -451,24 +410,16 @@ function summarizeDiagnostics(
     avgSerializeMs: average(diagnostics.map((entry) => entry.serializeMs)),
     avgCacheHits: average(diagnostics.map((entry) => entry.cacheHits)),
     avgCacheMisses: average(diagnostics.map((entry) => entry.cacheMisses)),
-    reuseRate:
-      average(diagnostics.map((entry) => (entry.reusedModule ? 1 : 0))) * 100,
+    reuseRate: average(diagnostics.map((entry) => (entry.reusedModule ? 1 : 0))) * 100,
     nodes: latest?.routeCount ?? 0,
     links: latest?.linkCount ?? 0,
   };
 }
 
-function createReport(
-  options: BenchmarkOptions,
-  summaries: BenchmarkSummary[],
-): BenchmarkReport {
+function createReport(options: BenchmarkOptions, summaries: BenchmarkSummary[]): BenchmarkReport {
   const coldSummary = summaries.find((summary) => summary.scenario === "cold");
-  const warmSummary = summaries.find(
-    (summary) => summary.scenario === "warm-cache",
-  );
-  const incrementalSummary = summaries.find(
-    (summary) => summary.scenario === "single-file-change",
-  );
+  const warmSummary = summaries.find((summary) => summary.scenario === "warm-cache");
+  const incrementalSummary = summaries.find((summary) => summary.scenario === "single-file-change");
 
   return {
     generatedAt: new Date().toISOString(),
@@ -480,10 +431,7 @@ function createReport(
     },
     summaries,
     improvements: {
-      warmCacheVsCold: improvementRatio(
-        coldSummary?.avgTotalMs ?? 0,
-        warmSummary?.avgTotalMs ?? 0,
-      ),
+      warmCacheVsCold: improvementRatio(coldSummary?.avgTotalMs ?? 0, warmSummary?.avgTotalMs ?? 0),
       singleFileChangeVsCold: improvementRatio(
         coldSummary?.avgTotalMs ?? 0,
         incrementalSummary?.avgTotalMs ?? 0,
@@ -497,10 +445,7 @@ async function writeOptionalOutputs(
   report: BenchmarkReport,
 ): Promise<void> {
   if (options.jsonOutputPath) {
-    await writeOutputFile(
-      options.jsonOutputPath,
-      `${JSON.stringify(report, null, 2)}\n`,
-    );
+    await writeOutputFile(options.jsonOutputPath, `${JSON.stringify(report, null, 2)}\n`);
     console.log(`JSON report written to ${options.jsonOutputPath}`);
   }
 
@@ -510,10 +455,7 @@ async function writeOptionalOutputs(
   }
 }
 
-async function writeOutputFile(
-  filePath: string,
-  content: string,
-): Promise<void> {
+async function writeOutputFile(filePath: string, content: string): Promise<void> {
   await mkdir(dirname(filePath), { recursive: true });
   await Bun.write(filePath, content);
 }
@@ -549,11 +491,7 @@ function toCsv(summaries: BenchmarkSummary[]): string {
     summary.reuseRate.toFixed(3),
   ]);
 
-  return (
-    [header, ...rows]
-      .map((row) => row.map(escapeCsvCell).join(","))
-      .join("\n") + "\n"
-  );
+  return `${[header, ...rows].map((row) => row.map(escapeCsvCell).join(",")).join("\n")}\n`;
 }
 
 function escapeCsvCell(value: string | number): string {
@@ -573,9 +511,7 @@ function average(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function toTableRow(
-  summary: BenchmarkSummary,
-): Record<string, string | number> {
+function toTableRow(summary: BenchmarkSummary): Record<string, string | number> {
   return {
     scenario: summary.scenario,
     shape: summary.shape,

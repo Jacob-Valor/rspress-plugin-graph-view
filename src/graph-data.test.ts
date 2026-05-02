@@ -2,11 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  buildGraphModule,
-  createGraphBuildCache,
-  type CollectedRoute,
-} from "./build";
+import { buildGraphModule, type CollectedRoute, createGraphBuildCache } from "./build";
 
 const tempDirectories: string[] = [];
 
@@ -14,9 +10,7 @@ afterEach(async () => {
   await Promise.all(
     tempDirectories
       .splice(0)
-      .map((directoryPath) =>
-        rm(directoryPath, { recursive: true, force: true }),
-      ),
+      .map((directoryPath) => rm(directoryPath, { recursive: true, force: true })),
   );
 });
 
@@ -31,10 +25,7 @@ describe("buildGraphModule", () => {
       logger: (message) => logs.push(message),
     });
 
-    expect(firstBuild.graphData.nodes.map((node) => node.id)).toEqual([
-      "/",
-      "/guide",
-    ]);
+    expect(firstBuild.graphData.nodes.map((node) => node.id)).toEqual(["/", "/guide"]);
     expect(firstBuild.graphData.links).toEqual([
       { source: "/", target: "/guide" },
       { source: "/guide", target: "/" },
@@ -66,9 +57,7 @@ describe("buildGraphModule", () => {
     await writeFile(files.guidePath, "# Guide Updated\n\n[Home](./index.md)\n");
 
     const rebuiltGraph = await buildGraphModule(routes, cache);
-    const guideNode = rebuiltGraph.graphData.nodes.find(
-      (node) => node.id === "/guide",
-    );
+    const guideNode = rebuiltGraph.graphData.nodes.find((node) => node.id === "/guide");
 
     expect(rebuiltGraph.diagnostics.cacheHits).toBe(1);
     expect(rebuiltGraph.diagnostics.cacheMisses).toBe(1);

@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useLocation } from "@rspress/core/runtime";
-import GraphView, { type GraphViewHandle, type GraphViewColors } from "./GraphView";
+import { useLocation, useNavigate } from "@rspress/core/runtime";
+import { useCallback, useEffect, useRef, useState } from "react";
+import GraphIcon from "./components/GraphIcon";
+import ZoomButton from "./components/ZoomButton";
+import GraphView, { type GraphViewColors, type GraphViewHandle } from "./GraphView";
 
 interface GraphPanelProps {
   defaultOpen?: boolean;
@@ -44,70 +46,6 @@ function injectKeyframes() {
     }
   `;
   document.head.appendChild(style);
-}
-
-interface ZoomButtonProps {
-  children: React.ReactNode;
-  ariaLabel: string;
-  onClick: () => void;
-}
-
-function ZoomButton({ children, ariaLabel, onClick }: ZoomButtonProps) {
-  return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      onClick={onClick}
-      style={{
-        width: 26,
-        height: 26,
-        borderRadius: 5,
-        border: "none",
-        background: "transparent",
-        color: "var(--rp-c-text-2, #64748b)",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 0,
-        transition: "background 0.12s, color 0.12s",
-        flexShrink: 0,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background =
-          "color-mix(in srgb, var(--rp-c-brand, #6366f1) 12%, transparent)";
-        e.currentTarget.style.color = "var(--rp-c-brand, #6366f1)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.color = "var(--rp-c-text-2, #64748b)";
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function GraphIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="5" cy="6" r="2.5" />
-      <circle cx="19" cy="6" r="2.5" />
-      <circle cx="12" cy="18" r="2.5" />
-      <line x1="7.5" y1="6" x2="16.5" y2="6" />
-      <line x1="6.5" y1="8" x2="10.5" y2="16" />
-      <line x1="17.5" y1="8" x2="13.5" y2="16" />
-    </svg>
-  );
 }
 
 export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelProps) {
@@ -201,11 +139,13 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname triggers stats refresh on route change
   useEffect(() => {
     const s = graphViewRef.current?.getStats();
     if (s) setStats(s);
   }, [pathname]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: panelVisible controls when mouse listener is attached
   useEffect(() => {
     const area = graphAreaRef.current;
     if (!area) return;
@@ -236,14 +176,11 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
     [navigate],
   );
 
-  const handleNodeHoverChange = useCallback(
-    (label: string | null, _x: number, _y: number) => {
-      setHoveredLabel(label);
-      const s = graphViewRef.current?.getStats();
-      if (s) setStats(s);
-    },
-    [],
-  );
+  const handleNodeHoverChange = useCallback((label: string | null, _x: number, _y: number) => {
+    setHoveredLabel(label);
+    const s = graphViewRef.current?.getStats();
+    if (s) setStats(s);
+  }, []);
 
   const FOOTER_HEIGHT = 22;
   const HEADER_HEIGHT = 34;
@@ -266,8 +203,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           height: 48,
           borderRadius: "50%",
           border: "none",
-          background:
-            "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%)",
+          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%)",
           color: "#fff",
           cursor: "pointer",
           display: "flex",
@@ -287,6 +223,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
         aria-label={isOpen ? "Close graph view" : "Open graph view"}
       >
         <svg
+          aria-hidden="true"
           width="20"
           height="20"
           viewBox="0 0 24 24"
@@ -335,12 +272,10 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
             height: panelSize.height,
             borderRadius: 16,
             overflow: "hidden",
-            background:
-              "color-mix(in srgb, var(--rp-c-bg, #ffffff) 78%, transparent)",
+            background: "color-mix(in srgb, var(--rp-c-bg, #ffffff) 78%, transparent)",
             backdropFilter: "blur(20px) saturate(1.5)",
             WebkitBackdropFilter: "blur(20px) saturate(1.5)",
-            border:
-              "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 60%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 60%, transparent)",
             boxShadow: [
               "0 12px 40px rgba(0,0,0,0.14)",
               "0 4px 12px rgba(0,0,0,0.06)",
@@ -350,12 +285,8 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               ? "gv-panel-enter 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
               : "none",
             opacity: isOpen ? 1 : 0,
-            transform: isOpen
-              ? "scale(1) translateY(0)"
-              : "scale(0.92) translateY(8px)",
-            transition: isOpen
-              ? "none"
-              : "opacity 0.2s ease, transform 0.2s ease",
+            transform: isOpen ? "scale(1) translateY(0)" : "scale(0.92) translateY(8px)",
+            transition: isOpen ? "none" : "opacity 0.2s ease, transform 0.2s ease",
             display: "flex",
             flexDirection: "column",
           }}
@@ -381,11 +312,10 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               alignItems: "center",
               justifyContent: "space-between",
               height: HEADER_HEIGHT,
-               padding: "0 8px 0 10px",
+              padding: "0 8px 0 10px",
               borderBottom:
                 "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 40%, transparent)",
-              background:
-                "color-mix(in srgb, var(--rp-c-bg, #ffffff) 50%, transparent)",
+              background: "color-mix(in srgb, var(--rp-c-bg, #ffffff) 50%, transparent)",
               position: "relative",
               zIndex: 1,
               flexShrink: 0,
@@ -423,19 +353,16 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   display: "flex",
                   alignItems: "center",
                   gap: 1,
-                  background:
-                    "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 35%, transparent)",
+                  background: "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 35%, transparent)",
                   borderRadius: 7,
                   padding: "1px 2px",
                   border:
                     "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 50%, transparent)",
                 }}
               >
-                <ZoomButton
-                  ariaLabel="Zoom in"
-                  onClick={() => graphViewRef.current?.zoomIn()}
-                >
+                <ZoomButton ariaLabel="Zoom in" onClick={() => graphViewRef.current?.zoomIn()}>
                   <svg
+                    aria-hidden="true"
                     width="12"
                     height="12"
                     viewBox="0 0 24 24"
@@ -448,11 +375,9 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                 </ZoomButton>
-                <ZoomButton
-                  ariaLabel="Zoom out"
-                  onClick={() => graphViewRef.current?.zoomOut()}
-                >
+                <ZoomButton ariaLabel="Zoom out" onClick={() => graphViewRef.current?.zoomOut()}>
                   <svg
+                    aria-hidden="true"
                     width="12"
                     height="12"
                     viewBox="0 0 24 24"
@@ -469,6 +394,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   onClick={() => graphViewRef.current?.zoomToFit()}
                 >
                   <svg
+                    aria-hidden="true"
                     width="12"
                     height="12"
                     viewBox="0 0 24 24"
@@ -489,6 +415,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   onClick={() => graphViewRef.current?.zoomReset()}
                 >
                   <svg
+                    aria-hidden="true"
                     width="12"
                     height="12"
                     viewBox="0 0 24 24"
@@ -508,8 +435,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                 style={{
                   width: 1,
                   height: 16,
-                  background:
-                    "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 60%, transparent)",
+                  background: "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 60%, transparent)",
                   margin: "0 2px",
                 }}
               />
@@ -524,8 +450,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   borderRadius: 6,
                   border: "none",
                   background: "transparent",
-                  color:
-                    "color-mix(in srgb, var(--rp-c-text-2, #64748b) 70%, transparent)",
+                  color: "color-mix(in srgb, var(--rp-c-text-2, #64748b) 70%, transparent)",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -534,8 +459,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   transition: "background 0.12s, color 0.12s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background =
-                    "color-mix(in srgb, #ef4444 10%, transparent)";
+                  e.currentTarget.style.background = "color-mix(in srgb, #ef4444 10%, transparent)";
                   e.currentTarget.style.color = "#ef4444";
                 }}
                 onMouseLeave={(e) => {
@@ -546,6 +470,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                 aria-label="Close graph view"
               >
                 <svg
+                  aria-hidden="true"
                   width="12"
                   height="12"
                   viewBox="0 0 12 12"
@@ -589,8 +514,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   top: tooltipPos.y - 28,
                   pointerEvents: "none",
                   zIndex: 20,
-                  background:
-                    "color-mix(in srgb, var(--rp-c-bg, #ffffff) 92%, transparent)",
+                  background: "color-mix(in srgb, var(--rp-c-bg, #ffffff) 92%, transparent)",
                   backdropFilter: "blur(8px)",
                   WebkitBackdropFilter: "blur(8px)",
                   border:
@@ -601,7 +525,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   fontWeight: 500,
                   fontFamily:
                     "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                   color: "var(--rp-c-text-1, #334155)",
+                  color: "var(--rp-c-text-1, #334155)",
                   whiteSpace: "nowrap",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                   animation: "gv-tooltip-in 0.12s ease-out",
@@ -623,8 +547,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               padding: "0 12px",
               borderTop:
                 "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 35%, transparent)",
-              background:
-                "color-mix(in srgb, var(--rp-c-bg, #ffffff) 40%, transparent)",
+              background: "color-mix(in srgb, var(--rp-c-bg, #ffffff) 40%, transparent)",
               flexShrink: 0,
               gap: 4,
             }}
@@ -632,6 +555,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
             {stats ? (
               <>
                 <svg
+                  aria-hidden="true"
                   width="10"
                   height="10"
                   viewBox="0 0 24 24"
@@ -640,8 +564,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   strokeWidth="2"
                   strokeLinecap="round"
                   style={{
-                    color:
-                      "color-mix(in srgb, var(--rp-c-brand, #6366f1) 60%, transparent)",
+                    color: "color-mix(in srgb, var(--rp-c-brand, #6366f1) 60%, transparent)",
                     flexShrink: 0,
                   }}
                 >
@@ -653,8 +576,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                     fontSize: 10,
                     fontFamily:
                       "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                    color:
-                      "color-mix(in srgb, var(--rp-c-text-2, #64748b) 80%, transparent)",
+                    color: "color-mix(in srgb, var(--rp-c-text-2, #64748b) 80%, transparent)",
                     userSelect: "none",
                     letterSpacing: "0.02em",
                   }}
@@ -668,8 +590,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               <span
                 style={{
                   fontSize: 10,
-                  color:
-                    "color-mix(in srgb, var(--rp-c-text-2, #64748b) 40%, transparent)",
+                  color: "color-mix(in srgb, var(--rp-c-text-2, #64748b) 40%, transparent)",
                   fontFamily:
                     "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                   userSelect: "none",
@@ -683,10 +604,8 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               style={{
                 marginLeft: "auto",
                 fontSize: 10,
-                color:
-                  "color-mix(in srgb, var(--rp-c-text-2, #64748b) 40%, transparent)",
-                fontFamily:
-                  "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                color: "color-mix(in srgb, var(--rp-c-text-2, #64748b) 40%, transparent)",
+                fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                 userSelect: "none",
                 display: "flex",
                 alignItems: "center",
@@ -700,8 +619,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   borderRadius: 3,
                   border:
                     "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 60%, transparent)",
-                  background:
-                    "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 20%, transparent)",
+                  background: "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 20%, transparent)",
                   lineHeight: "14px",
                   fontFamily: "inherit",
                 }}

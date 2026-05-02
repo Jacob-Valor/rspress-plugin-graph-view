@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildGraphData } from "./graph-builder";
 import type { ScannedRouteDocument } from "./cache";
+import { buildGraphData } from "./graph-builder";
 import type { CollectedRoute } from "./types";
 
 function makeRoute(
@@ -25,6 +25,7 @@ function makeScannedDocument(
     route,
     mtimeMs: 1000,
     size: 100,
+    contentHash: "abc123",
     inferredTitle,
     rawLinks,
   };
@@ -34,11 +35,7 @@ describe("buildGraphData", () => {
   test("resolves relative, extensionless, mdx, index, and absolute links", () => {
     const home = makeRoute("/", "/docs/index.md");
     const guide = makeRoute("/guide", "/docs/guide/index.md", "guide/index");
-    const install = makeRoute(
-      "/guide/install",
-      "/docs/guide/install.mdx",
-      "guide/install",
-    );
+    const install = makeRoute("/guide/install", "/docs/guide/install.mdx", "guide/install");
     const api = makeRoute("/api", "/docs/api.mdx", "api");
 
     const graphData = buildGraphData(
@@ -68,12 +65,7 @@ describe("buildGraphData", () => {
     const graphData = buildGraphData(
       [source, target],
       [
-        makeScannedDocument(source, [
-          "./target.md",
-          "./target",
-          "/target/",
-          "./missing.md",
-        ]),
+        makeScannedDocument(source, ["./target.md", "./target", "/target/", "./missing.md"]),
         makeScannedDocument(target, []),
       ],
     );

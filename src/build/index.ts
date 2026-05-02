@@ -1,23 +1,24 @@
-import { performance } from "node:perf_hooks";
 import { readFile, stat } from "node:fs/promises";
-import type { GraphData } from "../types";
-import { extractDisplayTitle, extractMarkdownLinks } from "./link-extractor";
+import { performance } from "node:perf_hooks";
 import {
   createGraphSignature,
+  type GraphBuildCache,
+  hashContent,
   maybeLogGraphBuild,
   pruneStaleDocuments,
-  type GraphBuildCache,
   type ScannedRouteDocument,
 } from "./cache";
 import { buildGraphData } from "./graph-builder";
-import type {
+import { extractDisplayTitle, extractMarkdownLinks } from "./link-extractor";
+import type { CollectedRoute, GraphBuildOptions, GraphBuildResult } from "./types";
+
+export { createGraphBuildCache } from "./cache";
+export type {
   CollectedRoute,
+  GraphBuildDiagnostics,
   GraphBuildOptions,
   GraphBuildResult,
 } from "./types";
-
-export { createGraphBuildCache } from "./cache";
-export type { CollectedRoute, GraphBuildOptions, GraphBuildDiagnostics, GraphBuildResult } from "./types";
 
 export async function buildGraphModule(
   routes: CollectedRoute[],
@@ -60,6 +61,7 @@ export async function buildGraphModule(
           route,
           mtimeMs: fileStat.mtimeMs,
           size: fileStat.size,
+          contentHash: cachedDocument.contentHash,
           inferredTitle: cachedDocument.inferredTitle,
           rawLinks: cachedDocument.rawLinks,
         } satisfies ScannedRouteDocument;
@@ -69,6 +71,7 @@ export async function buildGraphModule(
       const content = await readFile(route.absolutePath, "utf8");
       const inferredTitle = extractDisplayTitle(content);
       const rawLinks = extractMarkdownLinks(content);
+      const contentHash = hashContent(content);
       if (shouldProfile) {
         diagnostics.parseMs += performance.now() - parseStart;
       }
@@ -78,6 +81,7 @@ export async function buildGraphModule(
         route,
         mtimeMs: fileStat.mtimeMs,
         size: fileStat.size,
+        contentHash,
         inferredTitle,
         rawLinks,
       } satisfies ScannedRouteDocument;
@@ -85,6 +89,7 @@ export async function buildGraphModule(
       cache.documents.set(route.absolutePath, {
         mtimeMs: fileStat.mtimeMs,
         size: fileStat.size,
+        contentHash,
         inferredTitle,
         rawLinks,
       });

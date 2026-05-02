@@ -1,5 +1,4 @@
-export const FONT_STACK =
-  "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+export const FONT_STACK = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 export interface CanvasColors {
   currentNode: string;
@@ -81,10 +80,7 @@ export const DARK_COLORS: CanvasColors = {
   loaderTop: "#818cf8",
 };
 
-export function mergeColors(
-  base: CanvasColors,
-  overrides?: GraphViewColors,
-): CanvasColors {
+export function mergeColors(base: CanvasColors, overrides?: GraphViewColors): CanvasColors {
   if (!overrides) return base;
   return { ...base, ...overrides };
 }

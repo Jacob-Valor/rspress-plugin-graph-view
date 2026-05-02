@@ -98,8 +98,7 @@ export function deriveGraphViewData(
     nodes,
     links,
     isLargeGraph:
-      nodes.length > LARGE_GRAPH_NODE_THRESHOLD ||
-      links.length > LARGE_GRAPH_LINK_THRESHOLD,
+      nodes.length > LARGE_GRAPH_NODE_THRESHOLD || links.length > LARGE_GRAPH_LINK_THRESHOLD,
   };
 }
 
@@ -117,10 +116,7 @@ function ensureNeighborSet(
   return neighborSet;
 }
 
-function ensureLinkBucket(
-  linksByNode: GraphIndex["linksByNode"],
-  nodeId: string,
-): GraphLink[] {
+function ensureLinkBucket(linksByNode: GraphIndex["linksByNode"], nodeId: string): GraphLink[] {
   const existing = linksByNode.get(nodeId);
   if (existing) {
     return existing;

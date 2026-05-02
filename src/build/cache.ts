@@ -1,8 +1,15 @@
-import type { CollectedRoute, GraphBuildDiagnostics, GraphBuildOptions, GraphBuildResult } from "./types";
+import { createHash } from "node:crypto";
+import type {
+  CollectedRoute,
+  GraphBuildDiagnostics,
+  GraphBuildOptions,
+  GraphBuildResult,
+} from "./types";
 
 interface CachedRouteDocument {
   mtimeMs: number;
   size: number;
+  contentHash: string;
   inferredTitle?: string;
   rawLinks: string[];
 }
@@ -22,6 +29,7 @@ interface ScannedRouteDocument {
   route: CollectedRoute;
   mtimeMs: number;
   size: number;
+  contentHash: string;
   inferredTitle?: string;
   rawLinks: string[];
 }
@@ -42,8 +50,12 @@ export function pruneStaleDocuments(cache: GraphBuildCache, routes: CollectedRou
   }
 }
 
+export function hashContent(content: string): string {
+  return createHash("sha256").update(content).digest("hex").slice(0, 16);
+}
+
 export function createGraphSignature(documents: ScannedRouteDocument[]): string {
-  const signatureEntries = documents.map(({ route, mtimeMs, size }) => ({
+  const signatureEntries = documents.map(({ route, mtimeMs, size, contentHash }) => ({
     routePath: route.routePath,
     payload: [
       route.routePath,
@@ -52,6 +64,7 @@ export function createGraphSignature(documents: ScannedRouteDocument[]): string 
       route.pageName,
       mtimeMs,
       size,
+      contentHash,
     ] as const,
   }));
 

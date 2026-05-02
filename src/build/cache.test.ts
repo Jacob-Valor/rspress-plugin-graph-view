@@ -16,6 +16,7 @@ function makeScannedDocument(routePath: string, mtimeMs = 1000, size = 100) {
     route: makeRoute(routePath),
     mtimeMs,
     size,
+    contentHash: "abc123",
     inferredTitle: undefined,
     rawLinks: [],
   };
@@ -24,11 +25,26 @@ function makeScannedDocument(routePath: string, mtimeMs = 1000, size = 100) {
 describe("pruneStaleDocuments", () => {
   test("removes cached entries for routes that no longer exist", () => {
     const cache = createGraphBuildCache();
-    cache.documents.set("/docs/removed.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
-    cache.documents.set("/docs/kept.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
+    cache.documents.set("/docs/removed.md", {
+      mtimeMs: 1000,
+      size: 100,
+      contentHash: "a",
+      rawLinks: [],
+    });
+    cache.documents.set("/docs/kept.md", {
+      mtimeMs: 1000,
+      size: 100,
+      contentHash: "b",
+      rawLinks: [],
+    });
 
     const activeRoutes: CollectedRoute[] = [
-      { routePath: "/kept", absolutePath: "/docs/kept.md", relativePath: "kept.md", pageName: "kept" },
+      {
+        routePath: "/kept",
+        absolutePath: "/docs/kept.md",
+        relativePath: "kept.md",
+        pageName: "kept",
+      },
     ];
 
     pruneStaleDocuments(cache, activeRoutes);
@@ -39,10 +55,20 @@ describe("pruneStaleDocuments", () => {
 
   test("leaves cache untouched when all routes are still active", () => {
     const cache = createGraphBuildCache();
-    cache.documents.set("/docs/page.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
+    cache.documents.set("/docs/page.md", {
+      mtimeMs: 1000,
+      size: 100,
+      contentHash: "c",
+      rawLinks: [],
+    });
 
     const routes: CollectedRoute[] = [
-      { routePath: "/page", absolutePath: "/docs/page.md", relativePath: "page.md", pageName: "page" },
+      {
+        routePath: "/page",
+        absolutePath: "/docs/page.md",
+        relativePath: "page.md",
+        pageName: "page",
+      },
     ];
 
     pruneStaleDocuments(cache, routes);
@@ -52,8 +78,8 @@ describe("pruneStaleDocuments", () => {
 
   test("clears entire cache when route list is empty", () => {
     const cache = createGraphBuildCache();
-    cache.documents.set("/docs/a.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
-    cache.documents.set("/docs/b.md", { mtimeMs: 1000, size: 100, rawLinks: [] });
+    cache.documents.set("/docs/a.md", { mtimeMs: 1000, size: 100, contentHash: "d", rawLinks: [] });
+    cache.documents.set("/docs/b.md", { mtimeMs: 1000, size: 100, contentHash: "e", rawLinks: [] });
 
     pruneStaleDocuments(cache, []);
 
@@ -63,12 +89,10 @@ describe("pruneStaleDocuments", () => {
 
 describe("createGraphSignature", () => {
   test("produces the same signature regardless of document order", () => {
-    const docs = [
-      makeScannedDocument("/a"),
-      makeScannedDocument("/b"),
-    ];
+    const docs = [makeScannedDocument("/a"), makeScannedDocument("/b")];
 
     const sigAB = createGraphSignature(docs);
+    // biome-ignore lint/style/noNonNullAssertion: test fixture with known length
     const sigBA = createGraphSignature([docs[1]!, docs[0]!]);
 
     expect(sigAB).toBe(sigBA);
@@ -99,5 +123,17 @@ describe("createGraphSignature", () => {
     const sig = createGraphSignature([makeScannedDocument("/a")]);
     expect(typeof sig).toBe("string");
     expect(sig.length).toBeGreaterThan(0);
+  });
+
+  test("produces a different signature when content hash changes", () => {
+    const before = [makeScannedDocument("/a", 1000, 100)];
+    const after = [
+      {
+        ...makeScannedDocument("/a", 1000, 100),
+        contentHash: "different",
+      },
+    ];
+
+    expect(createGraphSignature(before)).not.toBe(createGraphSignature(after));
   });
 });

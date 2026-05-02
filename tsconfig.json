@@ -7,9 +7,8 @@
     "types": ["bun", "react"],
     "moduleDetection": "force",
     "jsx": "react-jsx",
-    "outDir": "dist",
     "paths": {
-      "rspress-plugin-graph-view": ["./src/index.ts"],
+      "rspress-plugin-graph-view": ["./src/index.ts"]
     },
 
     // Bundler mode

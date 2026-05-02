@@ -100,7 +100,7 @@ This means:
 | `react` | `^19` | Yes |
 | `react-dom` | `^19` | Yes |
 | `react-force-graph-2d` | `^1.29.1` | Yes |
-| `typescript` | `^5.9.3` | Optional |
+| `typescript` | `>=5.0` | Optional |
 
 See also:
 - [Getting Started](./getting-started.md)

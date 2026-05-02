@@ -1,8 +1,8 @@
 import * as path from "node:path";
 import type { GraphData, GraphLink, GraphNode } from "../types";
-import type { CollectedRoute } from "./types";
-import type { ScannedRouteDocument } from "./cache";
 import { normalizeRoutePath } from "../utils";
+import type { ScannedRouteDocument } from "./cache";
+import type { CollectedRoute } from "./types";
 
 export function buildGraphData(
   routes: CollectedRoute[],
@@ -124,10 +124,12 @@ function resolveLinkedRoute(
 }
 
 function normalizeAbsoluteLinkTarget(rawLink: string): string {
-  return rawLink
-    .replace(/\/+$/g, "")
-    .replace(/\.(md|mdx)$/i, "")
-    .replace(/\/index$/i, "") || "/";
+  return (
+    rawLink
+      .replace(/\/+$/g, "")
+      .replace(/\.(md|mdx)$/i, "")
+      .replace(/\/index$/i, "") || "/"
+  );
 }
 
 function makeNodeLabel(route: CollectedRoute, inferredTitle?: string): string {

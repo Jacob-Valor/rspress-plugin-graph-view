@@ -33,6 +33,7 @@ interface GraphViewProps {
 
 interface ForceGraphHandleRef {
   d3ReheatSimulation?: () => void;
+  d3Force?: (forceName: string, forceFn?: any) => any;
   zoom?: {
     (): number;
     (scale: number, durationMs?: number): void;
@@ -208,22 +209,24 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     return derived;
   }, [graphIndex, currentRoutePath]);
 
-  const connectedToNode = useCallback(
-    (nodeId: string): Set<string> => {
-      const connected = new Set<string>();
-      for (const link of fgLinks) {
-        const src =
-          typeof link.source === "object" ? (link.source as ForceGraphNode).id : link.source;
-        const tgt =
-          typeof link.target === "object" ? (link.target as ForceGraphNode).id : link.target;
-        if (src === nodeId) connected.add(tgt as string);
-        if (tgt === nodeId) connected.add(src as string);
+  useEffect(() => {
+    // Tweak forces for Obsidian-like physics when data changes
+    const timer = setTimeout(() => {
+      const fg = forceRef.current;
+      if (fg?.d3Force) {
+        const charge = fg.d3Force("charge");
+        if (charge && typeof charge.strength === "function") {
+          charge.strength(-150);
+        }
+        const link = fg.d3Force("link");
+        if (link && typeof link.distance === "function") {
+          link.distance(45);
+        }
+        fg.d3ReheatSimulation?.();
       }
-      connected.add(nodeId);
-      return connected;
-    },
-    [fgLinks],
-  );
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [fgNodes, fgLinks, ForceGraph]);
 
   const handleNodeClick = useCallback(
     (node: { routePath?: string }) => {
@@ -238,7 +241,10 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     (node: (ForceGraphNode & { x?: number; y?: number }) | null) => {
       if (node?.id) {
         hoveredNodeRef.current = node.id;
-        connectedSetRef.current = connectedToNode(node.id);
+        const adj = graphIndex.adjacentIdsByNode.get(node.id);
+        const set = new Set(adj || []);
+        set.add(node.id);
+        connectedSetRef.current = set;
         onNodeHoverChange?.(node.label ?? null, node.x ?? 0, node.y ?? 0);
       } else {
         hoveredNodeRef.current = null;
@@ -246,7 +252,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         onNodeHoverChange?.(null, 0, 0);
       }
     },
-    [connectedToNode, onNodeHoverChange],
+    [graphIndex, onNodeHoverChange],
   );
 
   const nodeColor = useCallback(
@@ -269,9 +275,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
 
       for (let x = startX; x < endX; x += spacing) {
         for (let y = startY; y < endY; y += spacing) {
-          ctx.beginPath();
-          ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillRect(x - dotRadius, y - dotRadius, dotRadius * 2, dotRadius * 2);
         }
       }
     },
@@ -298,68 +302,25 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
       const hasHover = hoveredNodeRef.current !== null;
       const dimmed = hasHover && !isConnectedToHover && !node.isCurrent;
 
-      if (node.isCurrent) {
-        const pulsePhase = ((Date.now() - pulseStartRef.current) % 3000) / 3000;
-        const pulseRadius = radius + 6 + Math.sin(pulsePhase * Math.PI * 2) * 3;
-        const pulseAlpha = 0.15 + Math.sin(pulsePhase * Math.PI * 2) * 0.08;
+      ctx.globalAlpha = dimmed ? 0.2 : 1;
 
-        const outerGlow = ctx.createRadialGradient(nx, ny, radius, nx, ny, radius + 14);
-        outerGlow.addColorStop(0, colors.currentNodeGlow);
-        outerGlow.addColorStop(1, colors.currentNodeGlowFade);
-        ctx.beginPath();
-        ctx.arc(nx, ny, radius + 14, 0, Math.PI * 2);
-        ctx.fillStyle = outerGlow;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(nx, ny, pulseRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = colors.currentNodePulseRing.replace("ALPHA", `${pulseAlpha}`);
-        ctx.lineWidth = 1.5 / globalScale;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(nx, ny, radius + 2.5, 0, Math.PI * 2);
-        ctx.strokeStyle = colors.currentNodeRing;
-        ctx.lineWidth = 1.5 / globalScale;
-        ctx.stroke();
-      }
-
-      if (!node.isCurrent && !isLargeGraph) {
-        ctx.beginPath();
-        ctx.arc(nx, ny + 0.8, radius + 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = colors.nodeShadow;
-        ctx.fill();
-      }
-
-      const nodeGrad = ctx.createRadialGradient(
-        nx - radius * 0.3,
-        ny - radius * 0.3,
-        0,
-        nx,
-        ny,
-        radius,
-      );
-      if (node.isCurrent) {
-        nodeGrad.addColorStop(0, colors.currentNodeGradLight);
-        nodeGrad.addColorStop(1, colors.currentNode);
-      } else if (isHovered) {
-        nodeGrad.addColorStop(0, colors.nodeGradHoverLight);
-        nodeGrad.addColorStop(1, colors.nodeHover);
-      } else {
-        nodeGrad.addColorStop(0, colors.nodeGradLight);
-        nodeGrad.addColorStop(1, colors.node);
-      }
-
-      ctx.globalAlpha = dimmed ? 0.3 : 1;
+      // Obsidian-like flat node
       ctx.beginPath();
       ctx.arc(nx, ny, radius, 0, Math.PI * 2);
-      ctx.fillStyle = nodeGrad;
+      if (node.isCurrent) {
+        ctx.fillStyle = colors.currentNode;
+      } else if (isHovered) {
+        ctx.fillStyle = colors.nodeHover;
+      } else {
+        ctx.fillStyle = colors.node;
+      }
       ctx.fill();
 
-      if (isHovered && !node.isCurrent) {
+      // Highlight rings
+      if (node.isCurrent || isHovered) {
         ctx.beginPath();
         ctx.arc(nx, ny, radius + 2, 0, Math.PI * 2);
-        ctx.strokeStyle = colors.hoverRing;
+        ctx.strokeStyle = node.isCurrent ? colors.currentNodeRing : colors.hoverRing;
         ctx.lineWidth = 1.2 / globalScale;
         ctx.stroke();
       }
@@ -371,8 +332,11 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        ctx.fillStyle = colors.labelShadow;
-        ctx.fillText(label, nx + 0.3, ny + radius + fontSize + 0.3);
+        // Outline for readability like Obsidian
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 2 / globalScale;
+        ctx.strokeStyle = colors.labelShadow;
+        ctx.strokeText(label, nx, ny + radius + fontSize + 2 / globalScale);
 
         if (node.isCurrent) {
           ctx.fillStyle = colors.currentLabel;
@@ -381,7 +345,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         } else {
           ctx.fillStyle = colors.label;
         }
-        ctx.fillText(label, nx, ny + radius + fontSize);
+        ctx.fillText(label, nx, ny + radius + fontSize + 2 / globalScale);
       }
 
       ctx.globalAlpha = 1;
@@ -460,14 +424,14 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
         onNodeHover={handleNodeHover as (node: unknown, prevNode: unknown) => void}
         linkColor={linkColor as (link: object) => string}
         linkWidth={linkWidth as (link: object) => number}
-        linkDirectionalParticles={isLargeGraph ? 0 : 2}
-        linkDirectionalParticleWidth={isLargeGraph ? 0 : 2}
+        linkDirectionalParticles={0}
+        linkDirectionalParticleWidth={0}
         linkDirectionalParticleColor={() => colors.particleColor}
         onNodeClick={handleNodeClick as (node: unknown, event: MouseEvent) => void}
         onRenderFramePre={drawBackground}
         backgroundColor="transparent"
-        d3AlphaDecay={isLargeGraph ? 0.06 : 0.02}
-        d3VelocityDecay={isLargeGraph ? 0.4 : 0.3}
+        d3AlphaDecay={isLargeGraph ? 0.08 : 0.04}
+        d3VelocityDecay={isLargeGraph ? 0.6 : 0.4}
       />
     </GraphErrorBoundary>
   );

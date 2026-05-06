@@ -14,6 +14,9 @@ const PANEL_ID = "rspress-graph-view-panel";
 const PANEL_TITLE_ID = "rspress-graph-view-title";
 const GRAPH_REGION_ID = "rspress-graph-view-region";
 
+const LOCAL_STORAGE_KEY_OPEN = "rspress-graph-view-open";
+const LOCAL_STORAGE_KEY_POS = "rspress-graph-view-pos";
+
 function injectKeyframes() {
   if (typeof document === "undefined") return;
   if (document.getElementById(STYLE_ID)) return;
@@ -52,16 +55,79 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [windowSize, setWindowSize] = useState({ width: 1000, height: 800 });
   const [panelSize, setPanelSize] = useState({ width: 320, height: 252 });
   const [panelVisible, setPanelVisible] = useState(defaultOpen);
   const [stats, setStats] = useState<{ nodes: number; links: number } | null>(null);
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const graphAreaRef = useRef<HTMLDivElement>(null);
   const graphViewRef = useRef<GraphViewHandle>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
+
+  useEffect(() => {
+    setIsHydrated(true);
+    try {
+      const storedOpen = localStorage.getItem(LOCAL_STORAGE_KEY_OPEN);
+      if (storedOpen !== null) setIsOpen(storedOpen === "true");
+
+      const storedPos = localStorage.getItem(LOCAL_STORAGE_KEY_POS);
+      if (storedPos) setPos(JSON.parse(storedPos));
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY_OPEN, String(isOpen));
+      localStorage.setItem(LOCAL_STORAGE_KEY_POS, JSON.stringify(pos));
+    } catch (e) {}
+  }, [isOpen, pos, isHydrated]);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      if ((e.target as HTMLElement).closest("button")) return;
+      if (isFullscreen) return;
+
+      isDragging.current = true;
+      dragStart.current = { x: e.clientX, y: e.clientY, posX: pos.x, posY: pos.y };
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      e.currentTarget.style.cursor = "grabbing";
+    },
+    [pos, isFullscreen],
+  );
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || isFullscreen) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    if (wrapperRef.current) {
+      wrapperRef.current.style.transform = `translate(${dragStart.current.posX + dx}px, ${dragStart.current.posY + dy}px)`;
+      wrapperRef.current.style.transition = "none";
+    }
+  }, [isFullscreen]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setPos({ x: dragStart.current.posX + dx, y: dragStart.current.posY + dy });
+    if (wrapperRef.current) {
+      wrapperRef.current.style.transition = "bottom 0.4s cubic-bezier(0.25, 1, 0.5, 1), right 0.4s cubic-bezier(0.25, 1, 0.5, 1), width 0.4s cubic-bezier(0.25, 1, 0.5, 1), height 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)";
+    }
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    e.currentTarget.style.cursor = "grab";
+  }, []);
 
   useEffect(() => {
     injectKeyframes();
@@ -69,6 +135,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
 
   useEffect(() => {
     const updateSize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
       const w = Math.min(400, Math.max(280, window.innerWidth * 0.36));
       const h = Math.min(312, Math.max(220, window.innerHeight * 0.36));
       setPanelSize({ width: w, height: h });
@@ -98,6 +165,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
       if (e.key === "Escape" && isOpen) {
         e.preventDefault();
         setIsOpen(false);
+        setIsFullscreen(false);
         fabRef.current?.focus();
         return;
       }
@@ -132,7 +200,10 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
         target.isContentEditable;
       if (e.key === "g" && !isEditable && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
-        setIsOpen((prev) => !prev);
+        setIsOpen((prev) => {
+          if (prev) setIsFullscreen(false);
+          return !prev;
+        });
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -145,27 +216,16 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
     if (s) setStats(s);
   }, [pathname]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: panelVisible controls when mouse listener is attached
-  useEffect(() => {
-    const area = graphAreaRef.current;
-    if (!area) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = area.getBoundingClientRect();
-      setTooltipPos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    };
-    area.addEventListener("mousemove", handleMouseMove);
-    return () => area.removeEventListener("mousemove", handleMouseMove);
-  }, [panelVisible]);
-
   const handleToggle = useCallback(() => {
-    setIsOpen((prev) => !prev);
+    setIsOpen((prev) => {
+      if (prev) setIsFullscreen(false);
+      return !prev;
+    });
   }, []);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
+    setIsFullscreen(false);
     fabRef.current?.focus();
   }, []);
 
@@ -176,15 +236,11 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
     [navigate],
   );
 
-  const handleNodeHoverChange = useCallback((label: string | null, _x: number, _y: number) => {
-    setHoveredLabel(label);
-    const s = graphViewRef.current?.getStats();
-    if (s) setStats(s);
-  }, []);
-
   const FOOTER_HEIGHT = 22;
   const HEADER_HEIGHT = 34;
-  const graphHeight = panelSize.height - HEADER_HEIGHT - FOOTER_HEIGHT;
+  const actualWidth = isFullscreen ? windowSize.width : panelSize.width;
+  const actualHeight = isFullscreen ? windowSize.height : panelSize.height;
+  const graphHeight = actualHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
 
   return (
     <>
@@ -205,18 +261,22 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           border: "none",
           background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%)",
           color: "#fff",
-          cursor: "pointer",
+          cursor: isFullscreen ? "default" : "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          animation: "gv-fab-pulse 3s ease-in-out infinite",
-          transition: "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          opacity: isFullscreen ? 0 : 1,
+          pointerEvents: isFullscreen ? "none" : "auto",
+          animation: isFullscreen ? "none" : "gv-fab-pulse 3s ease-in-out infinite",
+          transition: "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease",
         }}
         onMouseEnter={(e) => {
+          if (isFullscreen) return;
           e.currentTarget.style.transform = "scale(1.12)";
           e.currentTarget.style.animationPlayState = "paused";
         }}
         onMouseLeave={(e) => {
+          if (isFullscreen) return;
           e.currentTarget.style.transform = "scale(1)";
           e.currentTarget.style.animationPlayState = "running";
         }}
@@ -255,28 +315,40 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
         </svg>
       </button>
 
-      {panelVisible && (
-        <div
-          id={PANEL_ID}
-          ref={panelRef}
-          role="dialog"
-          aria-modal="false"
-          aria-labelledby={PANEL_TITLE_ID}
-          aria-describedby={GRAPH_REGION_ID}
-          style={{
-            position: "fixed",
-            bottom: 80,
-            right: 24,
-            zIndex: 9998,
-            width: panelSize.width,
-            height: panelSize.height,
-            borderRadius: 16,
+      <div
+        ref={wrapperRef}
+        style={{
+          position: "fixed",
+          bottom: isFullscreen ? 0 : 80,
+          right: isFullscreen ? 0 : 24,
+          zIndex: 9998,
+          transform: isFullscreen ? "translate(0px, 0px)" : `translate(${pos.x}px, ${pos.y}px)`,
+          width: actualWidth,
+          height: actualHeight,
+          transition:
+            "bottom 0.4s cubic-bezier(0.25, 1, 0.5, 1), right 0.4s cubic-bezier(0.25, 1, 0.5, 1), width 0.4s cubic-bezier(0.25, 1, 0.5, 1), height 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
+          pointerEvents: panelVisible ? "auto" : "none",
+        }}
+      >
+        {panelVisible && (
+          <div
+            id={PANEL_ID}
+            ref={panelRef}
+            role="dialog"
+            aria-modal="false"
+            aria-labelledby={PANEL_TITLE_ID}
+            aria-describedby={GRAPH_REGION_ID}
+            style={{
+              position: "relative",
+              width: "100%",
+              height: "100%",
+            borderRadius: isFullscreen ? 0 : 16,
             overflow: "hidden",
-            background: "color-mix(in srgb, var(--rp-c-bg, #ffffff) 78%, transparent)",
-            backdropFilter: "blur(20px) saturate(1.5)",
-            WebkitBackdropFilter: "blur(20px) saturate(1.5)",
-            border: "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 60%, transparent)",
-            boxShadow: [
+            background: isFullscreen ? "var(--rp-c-bg, #ffffff)" : "color-mix(in srgb, var(--rp-c-bg, #ffffff) 78%, transparent)",
+            backdropFilter: isFullscreen ? "none" : "blur(20px) saturate(1.5)",
+            WebkitBackdropFilter: isFullscreen ? "none" : "blur(20px) saturate(1.5)",
+            border: isFullscreen ? "none" : "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 60%, transparent)",
+            boxShadow: isFullscreen ? "none" : [
               "0 12px 40px rgba(0,0,0,0.14)",
               "0 4px 12px rgba(0,0,0,0.06)",
               "inset 0 1px 0 rgba(255,255,255,0.12)",
@@ -307,6 +379,10 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           />
 
           <div
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
             style={{
               display: "flex",
               alignItems: "center",
@@ -319,6 +395,8 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
               position: "relative",
               zIndex: 1,
               flexShrink: 0,
+              cursor: isFullscreen ? "default" : "grab",
+              touchAction: isFullscreen ? "auto" : "none",
             }}
           >
             <div
@@ -390,25 +468,24 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   </svg>
                 </ZoomButton>
                 <ZoomButton
-                  ariaLabel="Fit to view"
-                  onClick={() => graphViewRef.current?.zoomToFit()}
+                  ariaLabel={isFullscreen ? "Restore" : "Maximize"}
+                  onClick={() => setIsFullscreen(!isFullscreen)}
                 >
-                  <svg
-                    aria-hidden="true"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M15 3h6v6" />
-                    <path d="M9 21H3v-6" />
-                    <path d="M21 3l-7 7" />
-                    <path d="M3 21l7-7" />
-                  </svg>
+                  {isFullscreen ? (
+                    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                      <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                      <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                      <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+                    </svg>
+                  ) : (
+                    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                      <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+                      <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+                      <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                    </svg>
+                  )}
                 </ZoomButton>
                 <ZoomButton
                   ariaLabel="Reset zoom"
@@ -499,44 +576,13 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           >
             <GraphView
               ref={graphViewRef}
-              width={panelSize.width}
+              width={actualWidth}
               height={graphHeight}
               onNodeClick={handleNodeClick}
-              onNodeHoverChange={handleNodeHoverChange}
               colors={colors}
             />
 
-            {hoveredLabel && (
-              <div
-                style={{
-                  position: "absolute",
-                  left: tooltipPos.x + 12,
-                  top: tooltipPos.y - 28,
-                  pointerEvents: "none",
-                  zIndex: 20,
-                  background: "color-mix(in srgb, var(--rp-c-bg, #ffffff) 92%, transparent)",
-                  backdropFilter: "blur(8px)",
-                  WebkitBackdropFilter: "blur(8px)",
-                  border:
-                    "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 80%, transparent)",
-                  borderRadius: 6,
-                  padding: "3px 8px",
-                  fontSize: 11,
-                  fontWeight: 500,
-                  fontFamily:
-                    "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                  color: "var(--rp-c-text-1, #334155)",
-                  whiteSpace: "nowrap",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  animation: "gv-tooltip-in 0.12s ease-out",
-                  maxWidth: 200,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {hoveredLabel}
-              </div>
-            )}
+            {/* Hover tooltip removed for Obsidian-like canvas-only text */}
           </div>
 
           <div
@@ -631,6 +677,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           </div>
         </div>
       )}
+      </div>
     </>
   );
 }

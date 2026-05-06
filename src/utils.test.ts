@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import fc from "fast-check";
 import { normalizeRoutePath } from "./utils";
 
 describe("normalizeRoutePath", () => {
@@ -24,5 +25,33 @@ describe("normalizeRoutePath", () => {
 
   test("strips only the single trailing slash", () => {
     expect(normalizeRoutePath("/guide/api/")).toBe("/guide/api");
+  });
+
+  test("property: result never ends with a trailing slash (except root)", () => {
+    fc.assert(
+      fc.property(fc.string(), (path) => {
+        const result = normalizeRoutePath(path);
+        return result === "/" || !result.endsWith("/");
+      }),
+    );
+  });
+
+  test("property: result is always non-empty", () => {
+    fc.assert(
+      fc.property(fc.string(), (path) => {
+        const result = normalizeRoutePath(path);
+        return result.length > 0;
+      }),
+    );
+  });
+
+  test("property: idempotent — normalizing twice yields same result", () => {
+    fc.assert(
+      fc.property(fc.string(), (path) => {
+        const once = normalizeRoutePath(path);
+        const twice = normalizeRoutePath(once);
+        return once === twice;
+      }),
+    );
   });
 });

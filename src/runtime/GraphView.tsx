@@ -33,6 +33,7 @@ interface GraphViewProps {
 
 interface ForceGraphHandleRef {
   d3ReheatSimulation?: () => void;
+  // biome-ignore lint/suspicious/noExplicitAny: mirrors react-force-graph-2d handle — d3 force objects are heterogeneous and can't be typed without importing d3-force types
   d3Force?: (forceName: string, forceFn?: any) => any;
   zoom?: {
     (): number;
@@ -142,7 +143,6 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
   const [forceGraphError, setForceGraphError] = useState(false);
   const hoveredNodeRef = useRef<string | null>(null);
   const connectedSetRef = useRef<Set<string>>(new Set());
-  const pulseStartRef = useRef<number>(Date.now());
   const forceRef = useRef<ForceGraphHandleRef | null>(null);
   const statsRef = useRef({ nodes: 0, links: 0 });
 
@@ -209,6 +209,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     return derived;
   }, [graphIndex, currentRoutePath]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run force adjustments on navigation (fgNodes changes when route changes)
   useEffect(() => {
     // Tweak forces for Obsidian-like physics when data changes
     const timer = setTimeout(() => {
@@ -226,7 +227,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [fgNodes, fgLinks, ForceGraph]);
+  }, [fgNodes]);
 
   const handleNodeClick = useCallback(
     (node: { routePath?: string }) => {

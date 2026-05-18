@@ -1,0 +1,17 @@
+diff --git a/node_modules/@rspress/core/dist/theme/components/Search/SearchPanel.js b/node_modules/@rspress/core/dist/theme/components/Search/SearchPanel.js
+index 699755b..b9b991a 100644
+--- a/node_modules/@rspress/core/dist/theme/components/Search/SearchPanel.js
++++ b/node_modules/@rspress/core/dist/theme/components/Search/SearchPanel.js
+@@ -136,8 +136,10 @@
+                     if (currentSuggestionIndex >= 0 && currentRenderType === RenderType.Default) {
+                         const flatSuggestions = Array.from(normalizeSuggestions(currentSuggestions).values()).flat();
+                         const suggestion = flatSuggestions[currentSuggestionIndex];
+-                        navigate(suggestion.link);
+-                        clearSearchState();
++                        if (suggestion) {
++                            navigate(suggestion.link);
++                            clearSearchState();
++                        }
+                     }
+                     break;
+                 case KEY_CODE.ESC:

@@ -69,6 +69,10 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
   const fabRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
 
@@ -170,6 +174,12 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
+        if (isSearchOpen) {
+          e.preventDefault();
+          setIsSearchOpen(false);
+          setSearchQuery("");
+          return;
+        }
         e.preventDefault();
         setIsOpen(false);
         setIsFullscreen(false);
@@ -212,10 +222,18 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
           return !prev;
         });
       }
+
+      if (e.key === "/" && !isEditable && !e.metaKey && !e.ctrlKey && !e.altKey && isOpen) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+        setSearchQuery("");
+        // Focus the search input after render
+        requestAnimationFrame(() => searchInputRef.current?.focus());
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, isSearchOpen]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: pathname triggers stats refresh on route change
   useEffect(() => {
@@ -420,22 +438,149 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                   color: "var(--rp-c-brand, #6366f1)",
                   opacity: 0.9,
                   userSelect: "none",
+                  flex: 1,
+                  minWidth: 0,
                 }}
               >
                 <GraphIcon size={13} />
-                <span
-                  id={PANEL_TITLE_ID}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    fontFamily:
-                      "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                    letterSpacing: "0.05em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Graph View
-                </span>
+                {isSearchOpen ? (
+                  <>
+                    <svg
+                      aria-hidden="true"
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      style={{ flexShrink: 0, opacity: 0.6 }}
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.currentTarget.value)}
+                      onBlur={() => {
+                        if (!searchQuery) {
+                          setIsSearchOpen(false);
+                        }
+                      }}
+                      aria-label="Search graph nodes"
+                      placeholder="Filter nodes..."
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        border: "none",
+                        background: "transparent",
+                        outline: "none",
+                        fontSize: 11,
+                        fontFamily:
+                          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                        color: "var(--rp-c-text-1, #334155)",
+                        padding: 0,
+                        lineHeight: "16px",
+                      }}
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setIsSearchOpen(false);
+                        }}
+                        aria-label="Clear search"
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          padding: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          color: "color-mix(in srgb, var(--rp-c-text-2, #64748b) 60%, transparent)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <svg
+                          aria-hidden="true"
+                          width="11"
+                          height="11"
+                          viewBox="0 0 12 12"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        >
+                          <line x1="2" y1="2" x2="10" y2="10" />
+                          <line x1="10" y1="2" x2="2" y2="10" />
+                        </svg>
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span
+                      id={PANEL_TITLE_ID}
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        fontFamily:
+                          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Graph View
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSearchOpen(true);
+                        requestAnimationFrame(() => searchInputRef.current?.focus());
+                      }}
+                      aria-label="Search graph nodes"
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        padding: "2px",
+                        display: "flex",
+                        alignItems: "center",
+                        color: "color-mix(in srgb, var(--rp-c-brand, #6366f1) 50%, transparent)",
+                        borderRadius: 4,
+                        marginLeft: 2,
+                        transition: "color 0.12s, background 0.12s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = "var(--rp-c-brand, #6366f1)";
+                        e.currentTarget.style.background =
+                          "color-mix(in srgb, var(--rp-c-brand, #6366f1) 10%, transparent)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color =
+                          "color-mix(in srgb, var(--rp-c-brand, #6366f1) 50%, transparent)";
+                        e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        width="11"
+                        height="11"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      >
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                    </button>
+                  </>
+                )}
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -614,6 +759,7 @@ export default function GraphPanel({ defaultOpen = false, colors }: GraphPanelPr
                 height={graphHeight}
                 onNodeClick={handleNodeClick}
                 colors={colors}
+                searchQuery={isSearchOpen ? searchQuery : undefined}
               />
 
               {/* Hover tooltip removed for Obsidian-like canvas-only text */}

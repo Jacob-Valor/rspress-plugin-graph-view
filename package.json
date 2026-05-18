@@ -61,6 +61,7 @@
     "docs:dev": "rspress dev",
     "lint": "biome check src scripts",
     "lint:fix": "biome check --write src scripts",
+    "postinstall": "patch-package",
     "test": "bun test",
     "prepublishOnly": "bun run build && bun run test"
   },
@@ -70,6 +71,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "fast-check": "4.7.0",
+    "patch-package": "8.0.1",
     "semantic-release": "25.0.3",
     "typescript": "6.0.3"
   },

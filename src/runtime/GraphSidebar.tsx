@@ -36,6 +36,8 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [stats, setStats] = useState<{ nodes: number; links: number } | null>(null);
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const graphViewRef = useRef<GraphViewHandle>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -189,113 +191,227 @@ export default function GraphSidebar({ colors }: GraphSidebarProps) {
             onNodeClick={handleNodeClick}
             onNodeHoverChange={handleNodeHoverChange}
             colors={colors}
+            searchQuery={searchQuery || undefined}
           />
           <div style={tooltipStyles}>{hoveredLabel || " "}</div>
         </div>
 
-        <div style={toolbarStyles}>
+        <div
+          style={{
+            ...toolbarStyles,
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+        >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 2,
-              background: "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 35%, transparent)",
-              borderRadius: 5,
-              padding: "1px 2px",
-              border: "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 50%, transparent)",
+              gap: 4,
+              position: "relative",
             }}
           >
-            <ZoomButton
-              ariaLabel="Zoom in"
-              onClick={() => graphViewRef.current?.zoomIn()}
-              size="sm"
+            <svg
+              aria-hidden="true"
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              style={{
+                position: "absolute",
+                left: 6,
+                color: "var(--rp-c-text-3, #94a3b8)",
+                pointerEvents: "none",
+              }}
             >
-              <svg
-                aria-hidden="true"
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setSearchQuery("");
+                  (e.currentTarget as HTMLInputElement).blur();
+                }
+              }}
+              aria-label="Search graph nodes"
+              placeholder="Filter nodes..."
+              style={{
+                flex: 1,
+                border:
+                  "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 50%, transparent)",
+                borderRadius: 5,
+                background: "color-mix(in srgb, var(--rp-c-bg-soft, #f8fafc) 50%, transparent)",
+                outline: "none",
+                fontSize: 11,
+                fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                color: "var(--rp-c-text-1, #334155)",
+                padding: "4px 6px 4px 22px",
+                lineHeight: "14px",
+                transition: "border-color 0.15s",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor =
+                  "color-mix(in srgb, var(--rp-c-brand, #6366f1) 60%, transparent)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor =
+                  "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 50%, transparent)";
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  position: "absolute",
+                  right: 6,
+                  color: "var(--rp-c-text-3, #94a3b8)",
+                }}
               >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </ZoomButton>
-            <ZoomButton
-              ariaLabel="Zoom out"
-              onClick={() => graphViewRef.current?.zoomOut()}
-              size="sm"
-            >
-              <svg
-                aria-hidden="true"
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              >
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </ZoomButton>
-            <ZoomButton
-              ariaLabel="Fit to view"
-              onClick={() => graphViewRef.current?.zoomToFit()}
-              size="sm"
-            >
-              <svg
-                aria-hidden="true"
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M15 3h6v6" />
-                <path d="M9 21H3v-6" />
-                <path d="M21 3l-7 7" />
-                <path d="M3 21l7-7" />
-              </svg>
-            </ZoomButton>
-            <ZoomButton
-              ariaLabel="Reset zoom"
-              onClick={() => graphViewRef.current?.zoomReset()}
-              size="sm"
-            >
-              <svg
-                aria-hidden="true"
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-            </ZoomButton>
-          </div>
-          <span style={statsStyles}>
-            {stats ? (
-              <>
-                {stats.nodes} {stats.nodes === 1 ? "node" : "nodes"}
-                {" · "}
-                {stats.links} {stats.links === 1 ? "link" : "links"}
-              </>
-            ) : (
-              "Loading…"
+                <svg
+                  aria-hidden="true"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                >
+                  <line x1="2" y1="2" x2="10" y2="10" />
+                  <line x1="10" y1="2" x2="2" y2="10" />
+                </svg>
+              </button>
             )}
-          </span>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                background: "color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 35%, transparent)",
+                borderRadius: 5,
+                padding: "1px 2px",
+                border:
+                  "1px solid color-mix(in srgb, var(--rp-c-divider, #e2e8f0) 50%, transparent)",
+              }}
+            >
+              <ZoomButton
+                ariaLabel="Zoom in"
+                onClick={() => graphViewRef.current?.zoomIn()}
+                size="sm"
+              >
+                <svg
+                  aria-hidden="true"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </ZoomButton>
+              <ZoomButton
+                ariaLabel="Zoom out"
+                onClick={() => graphViewRef.current?.zoomOut()}
+                size="sm"
+              >
+                <svg
+                  aria-hidden="true"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </ZoomButton>
+              <ZoomButton
+                ariaLabel="Fit to view"
+                onClick={() => graphViewRef.current?.zoomToFit()}
+                size="sm"
+              >
+                <svg
+                  aria-hidden="true"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15 3h6v6" />
+                  <path d="M9 21H3v-6" />
+                  <path d="M21 3l-7 7" />
+                  <path d="M3 21l7-7" />
+                </svg>
+              </ZoomButton>
+              <ZoomButton
+                ariaLabel="Reset zoom"
+                onClick={() => graphViewRef.current?.zoomReset()}
+                size="sm"
+              >
+                <svg
+                  aria-hidden="true"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+              </ZoomButton>
+            </div>
+            <span style={statsStyles}>
+              {stats ? (
+                <>
+                  {stats.nodes} {stats.nodes === 1 ? "node" : "nodes"}
+                  {" · "}
+                  {stats.links} {stats.links === 1 ? "link" : "links"}
+                </>
+              ) : (
+                "Loading…"
+              )}
+            </span>
+          </div>
         </div>
       </div>
     </div>

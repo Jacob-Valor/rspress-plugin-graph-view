@@ -68,4 +68,55 @@ describe("deriveGraphViewData", () => {
 
     expect(derived.isLargeGraph).toBe(true);
   });
+
+  describe("search filtering", () => {
+    const graphData: GraphData = {
+      nodes: [
+        { id: "/", label: "Home", routePath: "/", val: 1 },
+        { id: "/guide", label: "Getting Started", routePath: "/guide", val: 1 },
+        { id: "/api", label: "API Reference", routePath: "/api", val: 1 },
+      ],
+      links: [
+        { source: "/", target: "/guide" },
+        { source: "/guide", target: "/api" },
+      ],
+    };
+
+    const graphIndex = createGraphIndex(graphData);
+
+    test("sets isMatched to true for nodes whose label matches the search query (case-insensitive)", () => {
+      const derived = deriveGraphViewData(graphData, graphIndex, "/guide", "getting");
+
+      const matched = derived.nodes.filter((node) => node.isMatched);
+      expect(matched).toHaveLength(1);
+      expect(matched[0]?.id).toBe("/guide");
+
+      const unmatched = derived.nodes.filter((node) => !node.isMatched);
+      expect(unmatched).toHaveLength(2);
+    });
+
+    test("sets isMatched to true for nodes whose routePath matches the search query", () => {
+      const derived = deriveGraphViewData(graphData, graphIndex, "/guide", "/api");
+
+      const matched = derived.nodes.filter((node) => node.isMatched);
+      expect(matched).toHaveLength(1);
+      expect(matched[0]?.id).toBe("/api");
+    });
+
+    test("sets hasActiveSearch to false when no query is provided", () => {
+      const derived = deriveGraphViewData(graphData, graphIndex, "/guide");
+      expect(derived.hasActiveSearch).toBe(false);
+    });
+
+    test("sets hasActiveSearch to true when a query is provided", () => {
+      const derived = deriveGraphViewData(graphData, graphIndex, "/guide", "home");
+      expect(derived.hasActiveSearch).toBe(true);
+    });
+
+    test("all nodes match when all nodes match query or query is empty", () => {
+      const derived = deriveGraphViewData(graphData, graphIndex, "/guide", "");
+      expect(derived.nodes.every((node) => node.isMatched)).toBe(true);
+      expect(derived.hasActiveSearch).toBe(false);
+    });
+  });
 });

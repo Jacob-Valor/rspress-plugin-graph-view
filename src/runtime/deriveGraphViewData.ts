@@ -2,6 +2,7 @@ import type { GraphData, GraphLink, GraphNode } from "../types";
 
 export interface ForceGraphNode extends GraphNode {
   isCurrent: boolean;
+  isMatched: boolean;
 }
 
 export interface ForceGraphLink {
@@ -19,6 +20,7 @@ export interface DerivedGraphViewData {
   nodes: ForceGraphNode[];
   links: ForceGraphLink[];
   isLargeGraph: boolean;
+  hasActiveSearch: boolean;
 }
 
 export const LARGE_GRAPH_NODE_THRESHOLD = 80;
@@ -50,19 +52,31 @@ export function createGraphIndex(graphData: GraphData): GraphIndex {
   };
 }
 
+function nodeMatchesQuery(node: GraphNode, searchQuery: string): boolean {
+  const query = searchQuery.toLowerCase();
+  return node.label.toLowerCase().includes(query) || node.routePath.toLowerCase().includes(query);
+}
+
 export function deriveGraphViewData(
   graphData: GraphData,
   graphIndex: GraphIndex,
   currentRoutePath: string,
+  searchQuery?: string,
 ): DerivedGraphViewData {
   const currentNode = graphIndex.nodeById.get(currentRoutePath);
+  const hasActiveSearch = Boolean(searchQuery);
+
+  const buildNodes = (sourceNodes: GraphNode[], baseIsCurrent: boolean): ForceGraphNode[] =>
+    sourceNodes.map((node) => ({
+      ...node,
+      isCurrent: baseIsCurrent ? node.id === currentRoutePath : false,
+      isMatched: hasActiveSearch ? nodeMatchesQuery(node, searchQuery ?? "") : true,
+    }));
 
   if (!currentNode) {
+    const nodes = buildNodes(graphData.nodes, false);
     return {
-      nodes: graphData.nodes.map((node) => ({
-        ...node,
-        isCurrent: false,
-      })),
+      nodes,
       links: graphData.links.map((link) => ({
         source: link.source,
         target: link.target,
@@ -70,6 +84,7 @@ export function deriveGraphViewData(
       isLargeGraph:
         graphData.nodes.length > LARGE_GRAPH_NODE_THRESHOLD ||
         graphData.links.length > LARGE_GRAPH_LINK_THRESHOLD,
+      hasActiveSearch,
     };
   }
 
@@ -86,6 +101,7 @@ export function deriveGraphViewData(
     nodes.push({
       ...node,
       isCurrent: node.id === currentRoutePath,
+      isMatched: hasActiveSearch ? nodeMatchesQuery(node, searchQuery ?? "") : true,
     });
   }
 
@@ -99,6 +115,7 @@ export function deriveGraphViewData(
     links,
     isLargeGraph:
       nodes.length > LARGE_GRAPH_NODE_THRESHOLD || links.length > LARGE_GRAPH_LINK_THRESHOLD,
+    hasActiveSearch,
   };
 }
 

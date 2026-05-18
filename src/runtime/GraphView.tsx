@@ -29,6 +29,7 @@ interface GraphViewProps {
   onNodeClick?: (routePath: string) => void;
   onNodeHoverChange?: (label: string | null, x: number, y: number) => void;
   colors?: GraphViewColors;
+  searchQuery?: string;
 }
 
 interface ForceGraphHandleRef {
@@ -132,7 +133,7 @@ export interface GraphViewHandle {
 }
 
 export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
-  { width, height, onNodeClick, onNodeHoverChange, colors: customColors },
+  { width, height, onNodeClick, onNodeHoverChange, colors: customColors, searchQuery },
   ref,
 ) {
   const { pathname } = useLocation();
@@ -203,11 +204,12 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
     nodes: fgNodes,
     links: fgLinks,
     isLargeGraph,
+    hasActiveSearch,
   } = useMemo(() => {
-    const derived = deriveGraphViewData(graphData, graphIndex, currentRoutePath);
+    const derived = deriveGraphViewData(graphData, graphIndex, currentRoutePath, searchQuery);
     statsRef.current = { nodes: derived.nodes.length, links: derived.links.length };
     return derived;
-  }, [graphIndex, currentRoutePath]);
+  }, [graphIndex, currentRoutePath, searchQuery]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-run force adjustments on navigation (fgNodes changes when route changes)
   useEffect(() => {
@@ -301,7 +303,8 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
       const isHovered = hoveredNodeRef.current === node.id;
       const isConnectedToHover = connectedSetRef.current.has(node.id);
       const hasHover = hoveredNodeRef.current !== null;
-      const dimmed = hasHover && !isConnectedToHover && !node.isCurrent;
+      const searchDimmed = hasActiveSearch && !node.isMatched;
+      const dimmed = (hasHover && !isConnectedToHover && !node.isCurrent) || searchDimmed;
 
       ctx.globalAlpha = dimmed ? 0.2 : 1;
 
@@ -317,11 +320,17 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
       }
       ctx.fill();
 
-      // Highlight rings
+      // Highlight rings — current, hovered, or search-matched
       if (node.isCurrent || isHovered) {
         ctx.beginPath();
         ctx.arc(nx, ny, radius + 2, 0, Math.PI * 2);
         ctx.strokeStyle = node.isCurrent ? colors.currentNodeRing : colors.hoverRing;
+        ctx.lineWidth = 1.2 / globalScale;
+        ctx.stroke();
+      } else if (hasActiveSearch && node.isMatched) {
+        ctx.beginPath();
+        ctx.arc(nx, ny, radius + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = colors.hoverRing;
         ctx.lineWidth = 1.2 / globalScale;
         ctx.stroke();
       }
@@ -351,7 +360,7 @@ export default forwardRef<GraphViewHandle, GraphViewProps>(function GraphView(
 
       ctx.globalAlpha = 1;
     },
-    [isLargeGraph, colors],
+    [isLargeGraph, colors, hasActiveSearch],
   );
 
   const linkColor = useCallback(
